@@ -1,0 +1,21 @@
+{
+  "appId": "com.",
+  "productName": "兰空图床批量上传工具",
+  "directories": {
+    "output": "dist"
+  },
+  "files": [
+    "dist/**/*",
+    "node_modules/**/*",
+    "package.json"
+  ],
+  "win": {
+    "target": "nsis",
+    "icon": "assets/icon.png"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true
+  },
+  "buildDependenciesFromSource": true
+}

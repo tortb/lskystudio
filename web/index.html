@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>兰空图床批量上传工具</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container mt-4">
+    <h1 class="text-center mb-4">兰空图床批量上传工具</h1>
+    
+    <div class="card">
+        <div class="card-header">
+          <h5>配置信息</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label for="apiUrl" class="form-label">API地址</label>
+            <input type="url" class="form-control" id="apiUrl" placeholder="请输入兰空图床API地址，例如：https://www.torimg.com/">
+            <div class="form-text">
+              API地址格式：https://your-domain.com/ （末尾需带斜杠，无需添加 /api/v2）
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="token" class="form-label">API令牌</label>
+            <input type="password" class="form-control" id="token" placeholder="请输入API令牌">
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="concurrency" class="form-label">并发数</label>
+              <input type="number" class="form-control" id="concurrency" min="1" max="10" value="5">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="permission" class="form-label">存储策略</label>
+              <select class="form-select" id="permission">
+                <option value="" disabled selected>加载中...</option>
+              </select>
+              <div class="form-text">
+                选择存储策略ID（必须是有效的策略ID）
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <div class="card mt-4">
+      <div class="card-header">
+        <h5>选择文件夹</h5>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label">选择上传方式</label>
+          <div class="d-flex gap-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="uploadType" id="uploadFolderRadio" value="folder" checked>
+              <label class="form-check-label" for="uploadFolderRadio">上传文件夹</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="uploadType" id="uploadFilesRadio" value="files">
+              <label class="form-check-label" for="uploadFilesRadio">上传文件</label>
+            </div>
+          </div>
+        </div>
+        <div class="mb-3" id="fileInputContainer">
+          <label for="fileInput" class="form-label">选择图片</label>
+          <input class="form-control" type="file" id="fileInput" accept=".jpg,.jpeg,.png,.gif,.bmp,.webp,.avif,.tif,.tiff,.jp2,.j2k,.jp2k,.jpf,.jpm,.jpg2,.j2c,.jpc,.jpx,.heic,.heif,image/*" multiple>
+          <div class="form-text" id="fileInputHelp">选择要上传的图片文件（支持多选）</div>
+        </div>
+        <div class="mb-3" id="folderInputContainer" style="display: none;">
+          <label for="folderInput" class="form-label">选择包含图片的文件夹</label>
+          <input class="form-control" type="file" id="folderInput" webkitdirectory directory multiple>
+          <div class="form-text">选择包含图片的文件夹（支持子文件夹递归）</div>
+        </div>
+        <div id="selectedFilesInfo" class="mt-2">
+          <p>已选择 <span id="fileCount">0</span> 个文件</p>
+          <div id="fileList" class="mt-2" style="max-height: 200px; overflow-y: auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-4">
+      <div class="card-header">
+        <h5>上传控制</h5>
+      </div>
+      <div class="card-body">
+        <button id="startUploadBtn" class="btn btn-success me-2">开始上传</button>
+        <button id="cancelUploadBtn" class="btn btn-warning me-2" disabled>取消上传</button>
+        <button id="retryUploadBtn" class="btn btn-danger me-2" disabled>重试</button>
+      </div>
+    </div>
+
+    <div class="card mt-4">
+      <div class="card-header">
+        <h5>总体上传进度</h5>
+      </div>
+      <div class="card-body">
+        <div class="progress mb-3">
+          <div id="uploadProgress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+        </div>
+        <p>状态: <span id="uploadStatus">等待选择文件</span></p>
+        <p>当前文件: <span id="currentFile">-</span></p>
+        <div class="d-flex justify-content-end">
+          <div class="btn-group" role="group">
+            <button id="clearAllResultsBtn" class="btn btn-outline-secondary btn-sm" disabled>清除所有</button>
+            <button id="clearSuccessResultsBtn" class="btn btn-outline-success btn-sm" disabled>清除成功</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card mt-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5>文件上传进度</h5>
+        <div>
+          <button id="toggleFileProgress" class="btn btn-outline-info btn-sm">展开/收起</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="fileProgressContainer" style="display: none; max-height: 300px; overflow-y: auto;">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th style="width: 40%;">文件名</th>
+                <th style="width: 45%;">进度</th>
+                <th style="width: 15%;">状态</th>
+              </tr>
+            </thead>
+            <tbody id="fileProgressList">
+              <!-- 文件进度行将动态添加到这里 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5>上传结果</h5>
+        <button id="downloadExcelBtn" class="btn btn-success btn-sm" disabled>下载Excel报告</button>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-striped" id="resultsTable">
+            <thead>
+              <tr>
+                <th>序号</th>
+                <th>文件夹名</th>
+                <th>大小</th>
+                <th>状态</th>
+                <th>URL</th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="excel-generator.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
