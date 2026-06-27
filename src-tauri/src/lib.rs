@@ -76,9 +76,10 @@ impl NodeProcess {
     fn start(&mut self, app_handle: tauri::AppHandle) -> Result<(), String> {
         // 获取 node-ipc 目录路径
         let resource_path = app_handle
-            .path_resolver()
-            .resolve_resource("../node-ipc")
-            .ok_or("无法找到 node-ipc 目录")?;
+            .path()
+            .resource_dir()
+            .map_err(|e| format!("无法找到资源目录: {}", e))?
+            .join("../node-ipc");
 
         // 启动 Node.js 进程
         let mut child = Command::new("node")
@@ -222,7 +223,7 @@ async fn ipc_call(
 
     // 注册 pending command
     {
-        let mut process = state.node_process.lock().map_err(|e| e.to_string())?;
+        let process = state.node_process.lock().map_err(|e| e.to_string())?;
         let mut commands = process.pending_commands.lock().map_err(|e| e.to_string())?;
         commands.insert(id.clone(), tx);
     }
@@ -251,9 +252,9 @@ async fn ipc_call(
 #[tauri::command]
 async fn load_config(app_handle: tauri::AppHandle) -> Result<AppConfig, String> {
     let config_path = app_handle
-        .path_resolver()
+        .path()
         .app_config_dir()
-        .ok_or("无法找到配置目录")?
+        .map_err(|e| format!("无法找到配置目录: {}", e))?
         .join("config.json");
 
     if config_path.exists() {
@@ -270,9 +271,9 @@ async fn load_config(app_handle: tauri::AppHandle) -> Result<AppConfig, String> 
 #[tauri::command]
 async fn save_config(app_handle: tauri::AppHandle, config: AppConfig) -> Result<(), String> {
     let config_dir = app_handle
-        .path_resolver()
+        .path()
         .app_config_dir()
-        .ok_or("无法找到配置目录")?;
+        .map_err(|e| format!("无法找到配置目录: {}", e))?;
 
     // 确保配置目录存在
     std::fs::create_dir_all(&config_dir)
@@ -296,7 +297,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             // 获取主窗口
-            let window = app.get_window("main").unwrap();
+            let window = app.get_webview_window("main").unwrap();
 
             // 设置窗口标题
             window.set_title("Lsky Studio").unwrap();
