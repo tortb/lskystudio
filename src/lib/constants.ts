@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 export const APP_NAME = "Lsky Studio";
-export const APP_VERSION = "0.1.0";
+export const APP_VERSION = "1.0.0";
 export const APP_DESCRIPTION = "Lsky Pro 图床批量上传客户端";
 
 // ---------------------------------------------------------------------------

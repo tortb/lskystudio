@@ -176,7 +176,7 @@ export function Sidebar() {
             )}
           >
             <span className="text-xs text-muted-foreground">
-              v0.1.0
+              v1.0.0
             </span>
             <Tooltip content="GitHub 仓库" side="top">
               <a
