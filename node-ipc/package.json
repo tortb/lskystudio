@@ -1,0 +1,16 @@
+{
+  "name": "lsky-studio-ipc",
+  "version": "0.1.0",
+  "description": "Lsky Studio Node.js IPC 服务",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "form-data": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

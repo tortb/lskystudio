@@ -1,60 +1,52 @@
 {
-  "$schema": "https://json.schemastore.org/package.json",
-  "name": "lsky-batch-upload",
-  "version": "1.1.3",
-  "description": "兰空图床批量上传工具 - 用于批量上传图片到兰空图床并生成Excel报告",
-  "main": "main.js",
+  "name": "lsky-studio",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
   "scripts": {
-    "start": "electron .",
-    "start-web": "http-server ./web -p 8080",
-    "build": "electron-builder --win --x64",
-    "build-all": "electron-builder --win --x64 --ia32",
-    "dev": "electron .",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder --win --x64 --ia32"
-  },
-  "keywords": [
-    "lan-kong",
-    "image-hosting",
-    "batch-upload",
-    "electron"
-  ],
-  "author": "蜀枕清何 (QQ: 356755331)",
-  "license": "MIT",
-  "devDependencies": {
-    "electron": "^28.2.0",
-    "electron-builder": "^24.13.3",
-    "http-server": "^14.1.1"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "build:app": "node scripts/build.cjs build",
+    "build:win": "node scripts/build.cjs build-win",
+    "build:linux": "node scripts/build.cjs build-linux",
+    "dev:app": "node scripts/build.cjs dev",
+    "check": "node scripts/build.cjs check",
+    "icons": "node scripts/generate-icons.cjs"
   },
   "dependencies": {
-    "xlsx": "^0.18.5"
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@tauri-apps/plugin-fs": "^2.0.0",
+    "@tauri-apps/plugin-shell": "^2.0.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.0",
+    "lucide-react": "^0.344.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.0",
+    "tailwind-merge": "^2.2.1"
   },
-  "build": {
-    "appId": "com.tortb.lsky",
-    "productName": "兰空图床批量上传工具",
-    "copyright": "Copyright © 2026 ",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "web/**/*",
-      "main.js",
-      "preload.js",
-      "package.json"
-    ],
-    "win": {
-      "target": "portable",
-      "icon": "/assets/icon.ico",
-      "requestedExecutionLevel": "asInvoker"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
-    },
-    "electronDownload": {
-      "mirror": "https://npmmirror.com/mirrors/electron/"
-    }
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
+    "@types/node": "^20.11.10",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.17",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "postcss": "^8.4.33",
+    "prettier": "^3.2.4",
+    "tailwindcss": "^3.4.1",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.12"
   }
 }

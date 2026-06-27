@@ -1,80 +1,126 @@
-# 兰空图床批量上传工具
+# Lsky Studio
 
-这是一个基于Electron和Web技术构建的兰空图床批量上传工具，支持并发上传、Excel报告生成和断点续传功能。
+现代化的兰空图床桌面客户端，基于 Tauri 2 + React + TypeScript 构建。
 
-作者：蜀枕清何 (QQ: 356755331)
+## ✨ 特性
 
-## 功能特性
+- 🚀 **现代化 UI** - 基于 React + Tailwind CSS + shadcn/ui
+- 🎨 **深色/浅色主题** - 支持主题切换
+- 📁 **拖拽上传** - 支持拖拽文件上传
+- ⚡ **批量上传** - 支持并发上传控制
+- 📊 **进度显示** - 实时显示上传进度
+- 📋 **历史记录** - 查看上传历史
+- 📁 **相册管理** - 管理兰空图床相册
+- 💻 **跨平台** - 支持 Windows 和 Linux
 
-- **批量上传**：支持多文件同时选择和批量上传
-- **并发控制**：可配置并发上传数量，提高上传效率
-- **存储策略选择**：动态获取兰空图床实例中的存储策略
-- **进度跟踪**：实时显示上传进度和状态
-- **Excel导出**：生成包含上传结果的Excel报告
-- **断点续传**：支持上传中断后继续上传
-- **配置持久化**：保存API配置信息，避免重复输入
+## 🛠️ 技术栈
 
-## 使用说明
+- **前端**: React 18 + TypeScript + Vite
+- **UI**: Tailwind CSS + shadcn/ui
+- **桌面框架**: Tauri 2
+- **图标**: Lucide Icons
+- **路由**: React Router 6
 
-### 系统要求
+## 📦 安装
 
-- Node.js v14 或更高版本
-- 有效的兰空图床API URL和Token
+### 前置要求
 
-### 安装和运行
+- Node.js 18+
+- Rust 工具链
+- pnpm
 
-1. 安装依赖包：
-   ```bash
-   npm install
-   ```
+### 安装依赖
 
-2. 启动Web界面：
-   ```bash
-   npx http-server ./web -p 8080
-   ```
-   
-   或者使用全局安装的http-server：
-   ```bash
-   http-server ./web -p 8080
-   ```
+```bash
+pnpm install
+```
 
-3. 在浏览器中访问 `http://localhost:8080`
+## 🚀 开发
 
-### 配置API信息
+### 开发模式
 
-1. 输入兰空图床的API URL（例如：https://your-domain.com）
-2. 输入API Token
-3. 存储策略会自动从兰空图床实例中加载
-4. 点击"保存配置"按钮保存设置
+```bash
+pnpm dev
+```
 
-### 上传文件
+### Tauri 开发模式
 
-1. 点击"选择文件"按钮选择要上传的图片文件
-2. 选择合适的存储策略
-3. 设置并发上传数量（建议不超过10）
-4. 点击"开始上传"按钮开始上传过程
-5. 上传完成后，可以点击"下载Excel报告"导出结果
+```bash
+pnpm tauri dev
+```
 
-## 技术架构
+## 📦 构建
 
-- **前端**：HTML、CSS、JavaScript，使用Bootstrap框架
-- **后端**：Node.js + Electron
-- **API客户端**：使用fetch API与兰空图床通信
-- **Excel生成**：使用SheetJS库
-- **并发控制**：自定义并发控制器
+### 构建前端
 
-## API集成
+```bash
+pnpm build
+```
 
-- **获取存储策略**：`/api/v1/strategies` (需要认证)
-- **上传图片**：`/api/v2/upload` (需要认证)
-- **获取图片列表**：`/api/user/photos` (需要认证)
+### 打包 Tauri 应用
 
-## 故障排除
+```bash
+pnpm tauri build
+```
 
-- 如果出现500错误，请确认兰空图床服务正在运行
-- 如果无法获取存储策略，请检查API URL和Token是否正确
-- 如果上传失败，请检查网络连接和文件大小限制
+## 📁 项目结构
 
-## 许可证
+```
+lsky-studio/
+├── src/                          # React 前端
+│   ├── app/                      # 应用入口
+│   ├── components/               # 组件
+│   │   ├── layout/               # 布局组件
+│   │   └── ui/                   # shadcn 组件
+│   ├── features/                 # 功能模块
+│   │   ├── dashboard/            # 仪表盘
+│   │   ├── upload/               # 上传
+│   │   ├── history/              # 历史记录
+│   │   ├── album/                # 相册管理
+│   │   └── settings/             # 设置
+│   ├── hooks/                    # 自定义 Hooks
+│   ├── lib/                      # 工具函数
+│   └── styles/                   # 样式文件
+│
+├── src-tauri/                    # Tauri 后端
+│   ├── src/
+│   │   ├── main.rs               # 入口文件
+│   │   └── lib.rs                # 核心逻辑
+│   ├── Cargo.toml                # Rust 依赖
+│   └── tauri.conf.json           # Tauri 配置
+│
+├── web/                          # 现有 Node.js 后端
+├── package.json
+├── vite.config.ts
+├── tailwind.config.ts
+└── tsconfig.json
+```
 
-此项目仅供学习和参考使用。
+## 🎨 UI 组件
+
+项目使用 shadcn/ui 组件库，包含以下组件：
+
+- Button
+- Card
+- Input
+- Label
+- Select
+- Progress
+- Badge
+- Toast
+
+## 📝 开发规范
+
+- 使用 TypeScript 严格模式
+- 使用 ESLint + Prettier 代码格式化
+- 遵循 React Hooks 最佳实践
+- 使用 Tailwind CSS 样式
+- 组件使用 Function Component
+
+## 📄 许可证
+
+MIT License
+
+## 👨‍💻 作者
+
+蜀枕清何 (QQ: 356755331)

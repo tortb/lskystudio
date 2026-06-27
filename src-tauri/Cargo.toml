@@ -1,0 +1,31 @@
+[package]
+name = "lsky-studio"
+version = "0.1.0"
+description = "Lsky Studio - 现代化兰空图床桌面客户端"
+authors = ["蜀枕清何"]
+license = "MIT"
+repository = "https://github.com/tortb/lskybatch"
+edition = "2021"
+
+[lib]
+name = "lsky_studio_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+uuid = { version = "1", features = ["v4"] }
+log = "0.4"
+env_logger = "0.10"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

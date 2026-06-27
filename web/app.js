@@ -196,7 +196,8 @@ class ApiClient {
 
       const result = await response.json();
       
-      if (result.status !== true) {
+      // 兼容 status 为 true 或 "success"
+      if (result.status !== true && result.status !== 'success') {
         throw new Error(result.message || '获取策略列表失败');
       }
 

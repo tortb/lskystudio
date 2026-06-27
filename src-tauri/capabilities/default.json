@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicholasconfer/tauri/dev/crates/tauri-utils/schema/capability.json",
+  "identifier": "default",
+  "description": "默认权限配置",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "shell:default",
+    "dialog:default",
+    "fs:default",
+    "fs:allow-read",
+    "fs:allow-write",
+    "fs:allow-exists",
+    "fs:allow-mkdir"
+  ]
+}
