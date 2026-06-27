@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Lsky Studio - 现代化兰空图床桌面客户端"
 authors = ["蜀枕清何"]
 license = "MIT"
-repository = "https://github.com/tortb/lskybatch"
+repository = "https://github.com/tortb/lskystudio"
 edition = "2021"
 
 [lib]

@@ -12,6 +12,7 @@ import {
   Monitor,
   PanelLeftClose,
   PanelLeftOpen,
+  Github,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/hooks/use-theme";
@@ -168,14 +169,26 @@ export function Sidebar() {
             collapsed ? "flex-col" : "justify-between",
           )}
         >
-          <span
+          <div
             className={cn(
-              "text-xs text-muted-foreground overflow-hidden transition-all duration-300",
+              "flex items-center gap-2 overflow-hidden transition-all duration-300",
               collapsed ? "w-0 opacity-0 h-0" : "w-auto opacity-100",
             )}
           >
-            v0.1.0
-          </span>
+            <span className="text-xs text-muted-foreground">
+              v0.1.0
+            </span>
+            <Tooltip content="GitHub 仓库" side="top">
+              <a
+                href="https://github.com/tortb/lskystudio"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Github className="h-3.5 w-3.5" />
+              </a>
+            </Tooltip>
+          </div>
 
           <Tooltip
             content={
