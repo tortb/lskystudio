@@ -136,6 +136,7 @@ function AppContent() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/history" element={<HistoryPage />} />
+        <Route path="/photos" element={<PhotoPage />} />
         <Route path="/albums" element={<AlbumPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>

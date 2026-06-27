@@ -1,19 +1,12 @@
 import { Minus, Square, X } from "lucide-react";
-import { invoke } from "@tauri-apps/api/core";
 import { Button } from "@/components/ui/button";
+import { windowApi, isWebMode } from "@/lib/api";
 
 export function Titlebar() {
-  const handleMinimize = () => {
-    invoke("minimize_window");
-  };
-
-  const handleMaximize = () => {
-    invoke("maximize_window");
-  };
-
-  const handleClose = () => {
-    invoke("close_window");
-  };
+  // 浏览器模式下不渲染自定义标题栏
+  if (isWebMode) {
+    return null;
+  }
 
   return (
     <div className="flex h-10 items-center justify-between border-b bg-card px-2">
@@ -30,7 +23,7 @@ export function Titlebar() {
           variant="ghost"
           size="icon"
           className="h-8 w-8"
-          onClick={handleMinimize}
+          onClick={() => windowApi.minimize()}
         >
           <Minus className="h-4 w-4" />
         </Button>
@@ -38,7 +31,7 @@ export function Titlebar() {
           variant="ghost"
           size="icon"
           className="h-8 w-8"
-          onClick={handleMaximize}
+          onClick={() => windowApi.maximize()}
         >
           <Square className="h-3 w-3" />
         </Button>
@@ -46,7 +39,7 @@ export function Titlebar() {
           variant="ghost"
           size="icon"
           className="h-8 w-8 hover:bg-destructive hover:text-destructive-foreground"
-          onClick={handleClose}
+          onClick={() => windowApi.close()}
         >
           <X className="h-4 w-4" />
         </Button>
