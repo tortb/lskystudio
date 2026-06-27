@@ -29,10 +29,25 @@
 ### 前置要求
 
 - Node.js 18+
-- Rust 工具链（Tauri 打包需要）
 - pnpm
+- Rust 工具链（Tauri 打包需要）
+- Linux 系统依赖（见下方）
 
-### 安装依赖
+### 安装系统依赖（Linux）
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev patchelf libssl-dev libglib2.0-dev
+
+# 安装 Rust（如未安装）
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+source "$HOME/.cargo/env"
+
+# 安装 Tauri CLI
+cargo install tauri-cli
+```
+
+### 安装项目依赖
 
 ```bash
 pnpm install
@@ -56,19 +71,29 @@ pnpm tauri dev
 
 ## 📦 构建
 
-### 构建前端
+### 开发模式
 
 ```bash
+# 浏览器模式（Web）
+pnpm dev
+
+# Tauri 桌面模式
+cargo tauri dev
+```
+
+### 打包生产版本
+
+```bash
+# 构建前端 + 打包 Tauri 应用
 pnpm build
+cargo tauri build
 ```
 
-### 打包 Tauri 应用
+打包产物位置：
+- **Linux**: `src-tauri/target/release/bundle/deb/`（.deb）和 `src-tauri/target/release/bundle/appimage/`（.AppImage）
+- **Windows**: `src-tauri/target/release/bundle/msi/`（.msi）
 
-```bash
-pnpm tauri build
-```
-
-打包产物位于 `src-tauri/target/release/bundle/`。
+> **注意**: Windows 打包需要在 Windows 环境执行，或使用 GitHub Actions 等 CI/CD 工具。
 
 ## 📁 项目结构
 
