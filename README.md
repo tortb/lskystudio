@@ -43,8 +43,8 @@ sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev patchelf
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 source "$HOME/.cargo/env"
 
-# 安装 Tauri CLI
-cargo install tauri-cli
+# Tauri CLI（已内置在依赖中，无需单独安装）
+# 项目通过 @tauri-apps/cli 管理，直接用 pnpm 命令即可
 ```
 
 ### 安装项目依赖
@@ -78,22 +78,23 @@ pnpm tauri dev
 pnpm dev
 
 # Tauri 桌面模式
-cargo tauri dev
+pnpm tauri dev
 ```
 
 ### 打包生产版本
 
+> ⚠️ 必须使用 `pnpm tauri build`，不能直接用 `cargo build`。`pnpm tauri build` 会依次执行：前端构建 → Rust 编译 → 生成安装包。仅 `cargo build` 只编译二进制，不会生成 `.deb`/`.AppImage` 等安装包。
+
 ```bash
-# 构建前端 + 打包 Tauri 应用
-pnpm build
-cargo tauri build
+# 构建前端 + 编译 Rust + 打包安装包
+pnpm tauri build
 ```
 
 打包产物位置：
-- **Linux**: `src-tauri/target/release/bundle/deb/`（.deb）和 `src-tauri/target/release/bundle/appimage/`（.AppImage）
-- **Windows**: `src-tauri/target/release/bundle/msi/`（.msi）
+- **Linux**: `src-tauri/target/release/bundle/deb/`（`.deb`）和 `src-tauri/target/release/bundle/appimage/`（`.AppImage`）
+- **Windows**: `src-tauri/target/release/bundle/msi/`（`.msi`）
 
-> **注意**: Windows 打包需要在 Windows 环境执行，或使用 GitHub Actions 等 CI/CD 工具。
+> **注意**: Windows 打包需要在 Windows 环境执行，macOS 打包需在 macOS 上构建（Tauri 不支持交叉编译到 macOS）。
 
 ## 📁 项目结构
 
