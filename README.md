@@ -37,7 +37,7 @@
 
 ```bash
 # Ubuntu/Debian
-sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev patchelf libssl-dev libglib2.0-dev
+sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev patchelf libssl-dev libglib2.0-dev libayatana-appindicator3-dev
 
 # 安装 Rust（如未安装）
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -91,10 +91,30 @@ pnpm tauri build
 ```
 
 打包产物位置：
-- **Linux**: `src-tauri/target/release/bundle/deb/`（`.deb`）和 `src-tauri/target/release/bundle/appimage/`（`.AppImage`）
-- **Windows**: `src-tauri/target/release/bundle/msi/`（`.msi`）
+- **Linux**: `src-tauri/target/release/bundle/deb/`（`.deb`）、`bundle/rpm/`（`.rpm`）、`bundle/appimage/`（`.AppImage`）
+- **Windows**: `src-tauri/target/release/bundle/nsis/`（`.exe`）
 
-> **注意**: Windows 打包需要在 Windows 环境执行，macOS 打包需在 macOS 上构建（Tauri 不支持交叉编译到 macOS）。
+### 从 Linux 交叉编译 Windows 版本
+
+Tauri 支持通过 `cargo-xwin` 在 Linux 上交叉编译 Windows 应用（仅生成 NSIS `.exe` 安装包，不支持 `.msi`）。
+
+```bash
+# 1. 安装系统依赖
+sudo apt install -y lld llvm
+
+# 2. 安装 Windows Rust 目标
+rustup target add x86_64-pc-windows-msvc
+
+# 3. 安装 cargo-xwin
+cargo install --locked cargo-xwin
+
+# 4. 构建 Windows 版本
+pnpm tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc
+```
+
+产物位于 `src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/`。
+
+> **注意**: 首次构建时 cargo-xwin 会自动下载 Windows SDK（约几百 MB），可用 `XWIN_CACHE_DIR` 环境变量指定缓存目录。macOS 打包需在 macOS 上构建（不支持交叉编译到 macOS）。
 
 ## 📁 项目结构
 
