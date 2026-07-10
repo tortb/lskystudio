@@ -69,8 +69,8 @@ pnpm tauri build
 Tauri 支持通过 `cargo-xwin` 在 Linux 上交叉编译 Windows 应用。仅生成 NSIS `.exe` 安装包，不支持 `.msi`（WiX 仅限 Windows）。
 
 ```bash
-# 1. 安装系统依赖
-sudo apt install -y lld llvm
+# 1. 安装系统依赖（lld 链接器 + llvm + clang-cl 编译器 + makensis）
+sudo apt update && sudo apt install -y lld llvm clang nsis
 
 # 2. 安装 Windows Rust 目标
 rustup target add x86_64-pc-windows-msvc
@@ -222,7 +222,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y libwebkit2gtk-4.1-dev build-essential libssl-dev \
-            libayatana-appindicator3-dev librsvg2-dev patchelf
+            libayatana-appindicator3-dev librsvg2-dev patchelf lld llvm clang nsis
       - run: pnpm install
       - run: cd node-ipc && npm install && cd ..
       - run: pnpm tauri build
