@@ -22,7 +22,7 @@
 - **桌面框架**: Tauri 2
 - **图标**: Lucide Icons
 - **路由**: React Router 6
-- **后端**: Node.js IPC 服务（Tauri 模式）
+- **后端**: Rust（Tauri commands）
 
 ## 📦 安装
 
@@ -139,11 +139,14 @@ lsky-studio/
 ├── src-tauri/                    # Tauri 后端
 │   ├── src/
 │   │   ├── main.rs               # 入口文件
-│   │   └── lib.rs                # 核心逻辑
+│   │   ├── lib.rs                # 核心逻辑与命令注册
+│   │   ├── config.rs             # 配置读写（config_* 命令）
+│   │   ├── upload.rs             # 上传引擎（upload_* 命令）
+│   │   ├── files.rs              # 文件选择（select_files 命令）
+│   │   └── error.rs              # 错误类型
 │   ├── Cargo.toml                # Rust 依赖
 │   └── tauri.conf.json           # Tauri 配置
 │
-├── node-ipc/                     # Node.js IPC 后端服务
 ├── docs/                         # 项目文档
 ├── package.json
 ├── vite.config.ts

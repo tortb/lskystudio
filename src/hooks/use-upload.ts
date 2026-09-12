@@ -148,7 +148,7 @@ export function useUpload() {
           const engine = uploadApi.getWebEngine();
           if (engine) {
             const engineFiles = files.map((f) => ({
-              file: (f as any).file as File,
+              file: f.file as File,
               name: f.name,
               size: f.size,
             }));

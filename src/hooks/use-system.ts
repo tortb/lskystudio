@@ -6,26 +6,21 @@ export function useSystem() {
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 监听 Node 就绪事件
+  // Rust 后端与应用同进程，启动即就绪；这里只订阅后端错误事件
   useEffect(() => {
-    const setupListeners = async () => {
-      const unlistenReady = await eventApi.onNodeReady((payload) => {
-        console.log("Node.js 就绪:", payload);
-        setIsReady(true);
-      });
+    setIsReady(true);
 
-      const unlistenError = await eventApi.onNodeError((payload) => {
-        console.error("Node.js 错误:", payload);
+    let unlistenError: (() => void) | undefined;
+    eventApi
+      .onNodeError((payload) => {
+        console.error("后端错误:", payload);
         setError(payload.message);
+      })
+      .then((fn) => {
+        unlistenError = fn;
       });
 
-      return () => {
-        unlistenReady();
-        unlistenError();
-      };
-    };
-
-    setupListeners();
+    return () => unlistenError?.();
   }, []);
 
   // 获取系统状态

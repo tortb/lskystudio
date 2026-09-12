@@ -14,6 +14,36 @@ import { useUpload } from "@/hooks/use-upload";
 import { useConfig } from "@/hooks/use-config";
 import { formatFileSize } from "@/lib/utils";
 import { UPLOAD_DEFAULTS } from "@/lib/constants";
+import { convertFileSrc } from "@tauri-apps/api/core";
+import { isTauriEnv } from "@/lib/env";
+import type { UploadFile } from "@/lib/api";
+
+/** 待上传文件缩略图：Web 模式用 File 对象，桌面模式用 asset 协议读取本地路径 */
+function FileThumb({ file }: { file: UploadFile }) {
+  const [src, setSrc] = useState("");
+
+  useEffect(() => {
+    if (file.file) {
+      const url = URL.createObjectURL(file.file);
+      setSrc(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    if (isTauriEnv) {
+      setSrc(convertFileSrc(file.path));
+    }
+  }, [file]);
+
+  if (!src) return null;
+
+  return (
+    <img
+      src={src}
+      alt={file.name}
+      className="h-full w-full object-cover"
+      loading="lazy"
+    />
+  );
+}
 
 export default function UploadPage() {
   const { config } = useConfig();
@@ -36,7 +66,7 @@ export default function UploadPage() {
     failedCount,
   } = useUpload();
 
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<UploadFile[]>([]);
   const [apiUrl, setApiUrl] = useState("");
   const [token, setToken] = useState("");
   const [storageId, setStorageId] = useState("1");
@@ -54,7 +84,7 @@ export default function UploadPage() {
     }
   }, [config]);
 
-  const handleFilesSelected = useCallback((files: File[]) => {
+  const handleFilesSelected = useCallback((files: UploadFile[]) => {
     setSelectedFiles((prev) => [...prev, ...files]);
   }, []);
 
@@ -82,12 +112,7 @@ export default function UploadPage() {
 
     // 如果有选中的文件，开始上传
     if (selectedFiles.length > 0) {
-      const uploadFiles = selectedFiles.map((file) => ({
-        path: (file as any).path || file.name,
-        name: file.name,
-        size: file.size,
-        file, // 附加 File 对象，Web 模式上传引擎需要
-      }));
+      const uploadFiles = selectedFiles;
 
       try {
         setStartTime(new Date());
@@ -116,12 +141,7 @@ export default function UploadPage() {
       return;
     }
 
-    const uploadFiles = selectedFiles.map((file) => ({
-      path: (file as any).path || file.name,
-      name: file.name,
-      size: file.size,
-      file,
-    }));
+    const uploadFiles = selectedFiles;
 
     try {
       setStartTime(new Date());
@@ -353,12 +373,7 @@ export default function UploadPage() {
                 className="group flex items-center gap-3 border-b border-border/60 px-5 py-3 transition-colors last:border-b-0 hover:bg-secondary/50"
               >
                 <div className="h-9 w-9 shrink-0 overflow-hidden rounded-sm bg-secondary">
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt={file.name}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                  />
+                  <FileThumb file={file} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[14px] font-medium leading-tight">

@@ -5,7 +5,6 @@
 
 const { execSync } = require('child_process');
 const path = require('path');
-const fs = require('fs');
 
 const ROOT_DIR = path.join(__dirname, '..');
 const TAURI_DIR = path.join(ROOT_DIR, 'src-tauri');
@@ -65,9 +64,6 @@ function installDependencies() {
   // 安装前端依赖
   run('pnpm install || npm install');
 
-  // 安装 Node IPC 依赖
-  run('npm install', { cwd: path.join(ROOT_DIR, 'node-ipc') });
-
   console.log('依赖安装完成\n');
 }
 
@@ -93,45 +89,6 @@ function buildTauri(target = null) {
   console.log('Tauri 构建完成\n');
 }
 
-// 复制 Node IPC 文件
-function copyNodeIpc() {
-  console.log('复制 Node IPC 文件...');
-
-  const sourceDir = path.join(ROOT_DIR, 'node-ipc');
-  const targetDir = path.join(ROOT_DIR, 'src-tauri', 'target', 'release', 'node-ipc');
-
-  // 创建目标目录
-  if (!fs.existsSync(targetDir)) {
-    fs.mkdirSync(targetDir, { recursive: true });
-  }
-
-  // 复制文件
-  const filesToCopy = [
-    'index.js',
-    'ipc-handler.js',
-    'upload-engine.js',
-    'config-manager.js',
-    'package.json',
-    'node_modules',
-  ];
-
-  filesToCopy.forEach(file => {
-    const source = path.join(sourceDir, file);
-    const target = path.join(targetDir, file);
-
-    if (fs.existsSync(source)) {
-      if (fs.lstatSync(source).isDirectory()) {
-        fs.cpSync(source, target, { recursive: true });
-      } else {
-        fs.copyFileSync(source, target);
-      }
-      console.log(`  复制: ${file}`);
-    }
-  });
-
-  console.log('Node IPC 文件复制完成\n');
-}
-
 // 主函数
 function main() {
   const args = process.argv.slice(2);
@@ -154,7 +111,6 @@ function main() {
       installDependencies();
       buildFrontend();
       buildTauri();
-      copyNodeIpc();
       console.log('构建完成！');
       break;
 
@@ -163,7 +119,6 @@ function main() {
       installDependencies();
       buildFrontend();
       buildTauri('x86_64-pc-windows-msvc');
-      copyNodeIpc();
       console.log('Windows 构建完成！');
       break;
 
@@ -172,7 +127,6 @@ function main() {
       installDependencies();
       buildFrontend();
       buildTauri('x86_64-unknown-linux-gnu');
-      copyNodeIpc();
       console.log('Linux 构建完成！');
       break;
 

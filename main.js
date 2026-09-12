@@ -10,7 +10,7 @@ function createWindow() {
     height: 800,
     minWidth: 800,
     minHeight: 600,
-    icon: path.join(__dirname, '/assets/icon.png'), // 可选：应用图标
+    icon: path.join(__dirname, 'src-tauri/icons/icon.png'), // 应用图标
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

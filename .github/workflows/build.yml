@@ -6,24 +6,41 @@ on:
       - "v*"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
+    name: ${{ matrix.name }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
-            args: "--target aarch64-apple-darwin"
+          # macOS：在 Apple Silicon runner 上构建 universal 包，一份产物同时覆盖 arm64 与 x86_64
+          - name: macOS (arm64 + x86_64)
+            platform: macos-latest
             rust-targets: "aarch64-apple-darwin,x86_64-apple-darwin"
-          - platform: macos-latest
-            args: "--target x86_64-apple-darwin"
-            rust-targets: "aarch64-apple-darwin,x86_64-apple-darwin"
-          - platform: ubuntu-22.04
-            args: "--bundles deb,appimage"
-            rust-targets: ""
-          - platform: windows-latest
-            args: "--bundles msi,nsis"
-            rust-targets: ""
+            args: "--target universal-apple-darwin"
+          # Linux x86_64
+          - name: Linux (x86_64)
+            platform: ubuntu-22.04
+            rust-targets: "x86_64-unknown-linux-gnu"
+            args: "--target x86_64-unknown-linux-gnu --bundles deb,appimage"
+          # Linux arm64
+          - name: Linux (arm64)
+            platform: ubuntu-22.04-arm
+            rust-targets: "aarch64-unknown-linux-gnu"
+            args: "--target aarch64-unknown-linux-gnu --bundles deb,appimage"
+          # Windows x86_64
+          - name: Windows (x86_64)
+            platform: windows-latest
+            rust-targets: "x86_64-pc-windows-msvc"
+            args: "--target x86_64-pc-windows-msvc --bundles msi,nsis"
+          # Windows arm64（Tauri 在 Windows arm64 上仅支持 NSIS 打包）
+          - name: Windows (arm64)
+            platform: windows-11-arm
+            rust-targets: "aarch64-pc-windows-msvc"
+            args: "--target aarch64-pc-windows-msvc --bundles nsis"
 
     runs-on: ${{ matrix.platform }}
 
@@ -38,7 +55,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Setup Rust
@@ -50,9 +67,10 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: "./src-tauri -> target"
+          key: ${{ matrix.rust-targets }}
 
       - name: Install Linux dependencies
-        if: matrix.platform == 'ubuntu-22.04'
+        if: startsWith(matrix.platform, 'ubuntu')
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -60,6 +78,7 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             patchelf \
+            libfuse2 \
             build-essential \
             curl \
             wget \

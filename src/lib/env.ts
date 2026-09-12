@@ -21,22 +21,7 @@ function detect(): boolean {
 /** 是否运行在 Tauri 桌面容器中（模块加载时确定，运行期不会变化） */
 export const isTauriEnv = detect();
 
-/**
- * Node.js IPC 后端是否已就绪。
- * 后端在正式构建中尚未随包分发，未就绪时自动回退到前端内置上传引擎，
- * 因此这里采用「就绪才用、否则回退」的策略，保证功能始终可用。
- */
-let nodeBackendReady = false;
-
-export function markNodeBackendReady() {
-  nodeBackendReady = true;
-}
-
-export function isNodeBackendReady() {
-  return nodeBackendReady;
-}
-
-/** 是否使用纯前端实现（非 Tauri，或 Tauri 中 Node 后端未就绪） */
+/** 是否使用纯前端实现（浏览器环境，上传走前端内置引擎） */
 export function isWebMode() {
-  return !(isTauriEnv && nodeBackendReady);
+  return !isTauriEnv;
 }

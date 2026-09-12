@@ -39,7 +39,6 @@ sudo pacman -S webkit2gtk-4.1 base-devel curl wget file openssl \
 
 ```bash
 pnpm install
-cd node-ipc && npm install && cd ..
 ```
 
 ### 2. 开发模式
@@ -187,12 +186,11 @@ for name, (w, h) in sizes.items():
     img.resize((w, h), Image.LANCZOS).save(os.path.join(icons_dir, name), "PNG")
 ```
 
-### Node.js 模块错误
+### 依赖错误
 
 ```bash
-rm -rf node_modules node-ipc/node_modules
+rm -rf node_modules
 pnpm install
-cd node-ipc && npm install && cd ..
 ```
 
 ## CI/CD
@@ -224,7 +222,6 @@ jobs:
           sudo apt install -y libwebkit2gtk-4.1-dev build-essential libssl-dev \
             libayatana-appindicator3-dev librsvg2-dev patchelf lld llvm clang nsis
       - run: pnpm install
-      - run: cd node-ipc && npm install && cd ..
       - run: pnpm tauri build
       - uses: actions/upload-artifact@v4
         with:
@@ -243,7 +240,6 @@ jobs:
           node-version: '18'
       - uses: dtolnay/rust-toolchain@stable
       - run: pnpm install
-      - run: cd node-ipc && npm install && cd ..
       - run: pnpm tauri build
       - uses: actions/upload-artifact@v4
         with:

@@ -11,7 +11,7 @@
   ],
   "win": {
     "target": "nsis",
-    "icon": "assets/icon.png"
+    "icon": "src-tauri/icons/icon.png"
   },
   "nsis": {
     "oneClick": false,

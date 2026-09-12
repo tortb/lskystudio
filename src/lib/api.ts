@@ -5,7 +5,7 @@
  */
 
 import { WebUploadEngine, type EngineUploadFile } from "./upload-engine";
-import { isTauriEnv, isWebMode, markNodeBackendReady } from "./env";
+import { isTauriEnv, isWebMode } from "./env";
 
 export { isWebMode };
 
@@ -22,6 +22,8 @@ export interface UploadFile {
   path: string;
   name: string;
   size: number;
+  /** 仅 Web 模式携带；Tauri 模式由 Rust 侧直接按 path 读取文件 */
+  file?: File;
 }
 
 export interface UploadTask {
@@ -52,11 +54,6 @@ export interface ConnectionTestResult {
 export interface SystemStatus {
   status: string;
   uptime: number;
-  memory: {
-    rss: number;
-    heapTotal: number;
-    heapUsed: number;
-  };
   tasks: number;
   isUploading: boolean;
 }
@@ -147,11 +144,6 @@ async function tauriInvoke<T>(command: string, args?: Record<string, unknown>): 
   }
 }
 
-// IPC 通用调用
-async function ipcCall<T>(method: string, params?: Record<string, unknown>): Promise<T> {
-  return tauriInvoke<T>("ipc_call", { method, params: params || {} });
-}
-
 // 窗口控制 API
 export const windowApi = {
   minimize: () => tauriInvoke("minimize_window"),
@@ -179,26 +171,27 @@ export const appApi = {
 
 // 系统 API
 export const systemApi = {
-  getVersion: async () => {
-    try {
-      return await ipcCall<{ version: string }>("get_version");
-    } catch {
-      return { version: "unknown" };
-    }
-  },
   getStatus: async () => {
     try {
-      return await ipcCall<SystemStatus>("get_status");
+      return await tauriInvoke<SystemStatus>("get_status");
     } catch {
       return {
         status: "unknown",
         uptime: 0,
-        memory: { rss: 0, heapTotal: 0, heapUsed: 0 },
         tasks: 0,
         isUploading: false,
       };
     }
   },
+};
+
+// 文件选择 API（仅 Tauri 模式可用，用于获取真实文件路径）
+export const filesApi = {
+  /** 打开系统文件选择框，返回所选文件的路径与元信息 */
+  select: () => tauriInvoke<UploadFile[]>("select_files"),
+
+  /** 把拖拽得到的路径解析为文件元信息 */
+  resolve: (paths: string[]) => tauriInvoke<UploadFile[]>("resolve_files", { paths }),
 };
 
 // 直接调用 Lsky Pro API（不通过 IPC）
@@ -242,7 +235,7 @@ async function fetchLskyApi(
 export const configApi = {
   get: async (): Promise<AppConfig> => {
     try {
-      return await ipcCall<AppConfig>("config_get");
+      return await tauriInvoke<AppConfig>("config_get");
     } catch {
       // 浏览器模式：从 localStorage 加载
       return localConfigApi.loadFromStorage();
@@ -251,7 +244,9 @@ export const configApi = {
 
   update: async (updates: Partial<AppConfig>): Promise<{ success: boolean; config: AppConfig }> => {
     try {
-      return await ipcCall<{ success: boolean; config: AppConfig }>("config_update", updates);
+      return await tauriInvoke<{ success: boolean; config: AppConfig }>("config_update", {
+        updates,
+      });
     } catch {
       // 浏览器模式：保存到 localStorage
       const currentConfig = localConfigApi.loadFromStorage();
@@ -263,8 +258,11 @@ export const configApi = {
 
   testConnection: async (apiUrl: string, apiToken: string): Promise<ConnectionTestResult> => {
     try {
-      // 尝试通过 IPC 调用
-      return await ipcCall<ConnectionTestResult>("config_test_connection", { apiUrl, apiToken });
+      // 尝试通过 Tauri command 调用
+      return await tauriInvoke<ConnectionTestResult>("config_test_connection", {
+        apiUrl,
+        apiToken,
+      });
     } catch {
       // 浏览器模式：直接调用 API
       try {
@@ -316,8 +314,11 @@ export const configApi = {
     }
 
     try {
-      // 尝试通过 IPC 调用
-      return await ipcCall<{ strategies: Strategy[] }>("config_get_strategies", { apiUrl, apiToken });
+      // 尝试通过 Tauri command 调用
+      return await tauriInvoke<{ strategies: Strategy[] }>("config_get_strategies", {
+        apiUrl,
+        apiToken,
+      });
     } catch {
       // 浏览器模式：直接调用 API
       try {
@@ -358,7 +359,7 @@ export const configApi = {
 export const uploadApi = {
   start: async (files: UploadFile[], apiUrl: string, token: string, storageId: string, concurrency?: number) => {
     if (isTauri) {
-      return ipcCall<{ taskIds: string[] }>("upload_start", {
+      return tauriInvoke<{ taskIds: string[] }>("upload_start", {
         files,
         apiUrl,
         token,
@@ -372,7 +373,7 @@ export const uploadApi = {
     setupWebEngineListeners(engine);
 
     const engineFiles: EngineUploadFile[] = files.map((f) => ({
-      file: (f as any).file as File, // 上传页面会附加 file 对象
+      file: f.file as File, // Web 模式由选择器附加 File 对象
       name: f.name,
       size: f.size,
     }));
@@ -383,7 +384,7 @@ export const uploadApi = {
 
   pause: async (taskIds?: string[]) => {
     if (!isWebMode()) {
-      return ipcCall<{ paused: string[] }>("upload_pause", { taskIds });
+      return tauriInvoke<{ paused: string[] }>("upload_pause", { taskIds });
     }
     const engine = getWebEngine();
     return engine.pause(taskIds);
@@ -391,7 +392,7 @@ export const uploadApi = {
 
   resume: async (taskIds?: string[]) => {
     if (!isWebMode()) {
-      return ipcCall<{ resumed: string[] }>("upload_resume", { taskIds });
+      return tauriInvoke<{ resumed: string[] }>("upload_resume", { taskIds });
     }
     const engine = getWebEngine();
     return engine.resume(taskIds);
@@ -399,7 +400,7 @@ export const uploadApi = {
 
   cancel: async (taskIds?: string[]) => {
     if (isTauri) {
-      return ipcCall<{ cancelled: string[] }>("upload_cancel", { taskIds });
+      return tauriInvoke<{ cancelled: string[] }>("upload_cancel", { taskIds });
     }
     const engine = getWebEngine();
     return engine.cancel(taskIds);
@@ -407,7 +408,7 @@ export const uploadApi = {
 
   getStatus: async (taskIds?: string[]) => {
     if (!isWebMode()) {
-      return ipcCall<{ tasks: UploadTask[] }>("upload_status", { taskIds });
+      return tauriInvoke<{ tasks: UploadTask[] }>("upload_status", { taskIds });
     }
     const engine = getWebEngine();
     const allTasks = engine.getTasks();
@@ -431,8 +432,8 @@ export const uploadApi = {
 
 // 事件监听 API
 //
-// 同时订阅 Tauri 事件与前端引擎事件：Node 后端未就绪时由前端引擎产出事件，
-// 后端就绪后由 Node 产出，前端无需关心当前走的是哪条链路。
+// 同时订阅 Tauri 事件与前端引擎事件：浏览器模式由前端引擎产出事件，
+// Tauri 模式由 Rust 后端产出，前端无需关心当前走的是哪条链路。
 function subscribeUploadEvent<T>(
   eventName: string,
   webListeners: WebEventCallback<T>[],
@@ -459,15 +460,6 @@ function subscribeUploadEvent<T>(
 }
 
 export const eventApi = {
-  onNodeReady: async (callback: (payload: { version: string; pid: number }) => void) => {
-    if (!isTauriEnv) return () => {};
-    const { listen } = await import("@tauri-apps/api/event");
-    return listen("node_ready", (event) => {
-      markNodeBackendReady();
-      callback(event.payload as { version: string; pid: number });
-    });
-  },
-
   onNodeError: async (callback: (payload: { code: string; message: string }) => void) => {
     if (!isTauriEnv) return () => {};
     const { listen } = await import("@tauri-apps/api/event");

@@ -79,19 +79,13 @@ install_dependencies() {
     # 再次安装确保 esbuild 正确安装
     pnpm install || npm install
 
-    # 安装 node-ipc 依赖
-    info "安装 node-ipc 依赖..."
-    cd node-ipc
-    npm install
-    cd ..
-
     success "依赖安装完成!"
 }
 
-# 启动开发模式（带日志）
+# 启动开发模式（浏览器，带日志）
 start_dev() {
     info "启动开发模式..."
-    info "日志文件: $LOG_DIR/frontend.log, $LOG_DIR/backend.log"
+    info "日志文件: $LOG_DIR/frontend.log"
 
     # 检查依赖
     if [ ! -d "node_modules" ]; then
@@ -101,7 +95,6 @@ start_dev() {
 
     # 杀死已存在的进程
     pkill -f "vite" 2>/dev/null || true
-    pkill -f "node index.js" 2>/dev/null || true
     sleep 1
 
     # 启动前端（带日志）
@@ -109,35 +102,23 @@ start_dev() {
     npm run dev 2>&1 | tee "$LOG_DIR/frontend.log" &
     FRONTEND_PID=$!
 
-    sleep 2
-
-    # 启动后端（带日志）
-    info "启动后端服务..."
-    cd node-ipc
-    npm start 2>&1 | tee "../$LOG_DIR/backend.log" &
-    BACKEND_PID=$!
-    cd ..
-
     success "开发服务已启动!"
     echo ""
     echo "=========================================="
     echo "  前端: http://localhost:5173/"
-    echo "  后端: stdin/stdout 通信"
     echo "=========================================="
     echo ""
     echo "日志文件:"
     echo "  - 前端日志: $LOG_DIR/frontend.log"
-    echo "  - 后端日志: $LOG_DIR/backend.log"
     echo ""
     echo "查看日志命令:"
     echo "  tail -f $LOG_DIR/frontend.log"
-    echo "  tail -f $LOG_DIR/backend.log"
     echo ""
-    echo "按 Ctrl+C 停止所有服务"
+    echo "按 Ctrl+C 停止服务"
     echo ""
 
     # 等待用户中断
-    trap "kill $FRONTEND_PID $BACKEND_PID 2>/dev/null; echo ''; info '服务已停止'; exit 0" INT TERM
+    trap "kill $FRONTEND_PID 2>/dev/null; echo ''; info '服务已停止'; exit 0" INT TERM
     wait
 }
 
@@ -149,10 +130,6 @@ view_logs() {
         frontend|fe)
             info "查看前端日志 (Ctrl+C 退出):"
             tail -f "$LOG_DIR/frontend.log"
-            ;;
-        backend|be)
-            info "查看后端日志 (Ctrl+C 退出):"
-            tail -f "$LOG_DIR/backend.log"
             ;;
         all|*)
             info "查看所有日志 (Ctrl+C 退出):"
@@ -216,9 +193,6 @@ clean_cache() {
         rm -rf src-tauri/target
     fi
 
-    # 清理 node-ipc 缓存
-    rm -rf node-ipc/node_modules
-
     # 清理日志
     rm -rf "$LOG_DIR"
 
@@ -233,13 +207,12 @@ show_help() {
     echo ""
     echo "命令:"
     echo "  setup       首次安装设置（安装 Rust 和依赖）"
-    echo "  dev         启动开发模式（前端 + 后端，带日志）"
+    echo "  dev         启动开发模式（浏览器，带日志）"
     echo "  tauri       启动 Tauri 开发模式（需要 Rust）"
     echo "  build       构建应用"
     echo "  clean       清理构建缓存"
     echo "  logs        查看所有日志"
     echo "  logs fe     查看前端日志"
-    echo "  logs be     查看后端日志"
     echo "  help        显示此帮助信息"
     echo ""
     echo "示例:"
@@ -247,7 +220,6 @@ show_help() {
     echo "  ./setup.sh dev        # 启动开发"
     echo "  ./setup.sh logs       # 查看日志"
     echo "  ./setup.sh logs fe    # 查看前端日志"
-    echo "  ./setup.sh logs be    # 查看后端日志"
 }
 
 # 主函数

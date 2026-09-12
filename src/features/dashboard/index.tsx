@@ -7,8 +7,8 @@ import {
   XCircle,
   TrendingUp,
   Cpu,
-  HardDrive,
   Activity,
+  Clock,
   Settings,
   Image,
   Loader2,
@@ -153,10 +153,14 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // 格式化内存大小
-  const formatMemory = (bytes: number): string => {
-    const mb = bytes / 1024 / 1024;
-    return `${Math.round(mb)} MB`;
+  // 格式化运行时间
+  const formatUptime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+      return `${hours} 小时 ${minutes} 分钟`;
+    }
+    return `${minutes} 分钟`;
   };
 
   const isConfigured = Boolean(config?.apiUrl && config?.apiToken);
@@ -324,25 +328,25 @@ export default function DashboardPage() {
           <Card className="overflow-hidden">
             <div className="border-b border-border/70 px-5 py-3.5">
               <h3 className="text-section">系统状态</h3>
-              <p className="mt-0.5 text-[12px] text-muted-foreground">Node.js 服务状态</p>
+              <p className="mt-0.5 text-[12px] text-muted-foreground">应用服务状态</p>
             </div>
             <div className="grid divide-y divide-border/60 md:grid-cols-3 md:divide-x md:divide-y-0">
               <div className="flex items-center justify-between gap-3 px-5 py-4">
                 <div className="flex items-center gap-2">
-                  <Cpu className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
-                  <span className="text-[14px]">内存使用</span>
+                  <Clock className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                  <span className="text-[14px]">运行时间</span>
                 </div>
                 <span className="text-[14px] tabular-nums text-muted-foreground">
-                  {status ? formatMemory(status.memory.heapUsed) : "—"}
+                  {status ? formatUptime(status.uptime) : "—"}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3 px-5 py-4">
                 <div className="flex items-center gap-2">
-                  <HardDrive className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
-                  <span className="text-[14px]">堆内存总量</span>
+                  <Cpu className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                  <span className="text-[14px]">任务数量</span>
                 </div>
                 <span className="text-[14px] tabular-nums text-muted-foreground">
-                  {status ? formatMemory(status.memory.heapTotal) : "—"}
+                  {status ? status.tasks : "—"}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3 px-5 py-4">

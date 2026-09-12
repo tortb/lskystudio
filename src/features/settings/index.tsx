@@ -13,7 +13,6 @@ import {
   Upload,
   Download,
   Cpu,
-  HardDrive,
   Globe,
   ImageIcon,
   Zap,
@@ -34,7 +33,7 @@ import { StatusIndicator } from "@/components/shared/status-indicator";
 import { useTheme } from "@/hooks/use-theme";
 import { useConfig, useStrategies, useTestConnection } from "@/hooks/use-config";
 import { useSystem } from "@/hooks/use-system";
-import { appApi, systemApi, isWebMode } from "@/lib/api";
+import { appApi, isWebMode } from "@/lib/api";
 import { APP_VERSION } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -141,7 +140,7 @@ export default function SettingsPage() {
 
   // 应用信息
   const [appVersion, setAppVersion] = useState<string>("");
-  const [nodeVersion, setNodeVersion] = useState<string>("");
+  const [runtimeEnv, setRuntimeEnv] = useState<string>("");
 
   // 表单验证错误
   const [errors, setErrors] = useState<FormErrors>({});
@@ -180,21 +179,15 @@ export default function SettingsPage() {
     loadAppInfo();
   }, []);
 
-  // 加载 Node.js 版本（仅 Tauri 模式）
+  // 运行环境
   useEffect(() => {
     if (isWebMode()) {
-      setNodeVersion(`浏览器模式 (${navigator.userAgent.match(/Chrome\/[\d.]+|Firefox\/[\d.]+|Safari\/[\d.]+/)?.[0] || "Unknown"})`);
+      setRuntimeEnv(
+        `浏览器模式 (${navigator.userAgent.match(/Chrome\/[\d.]+|Firefox\/[\d.]+|Safari\/[\d.]+/)?.[0] || "Unknown"})`,
+      );
       return;
     }
-    const loadNodeVersion = async () => {
-      try {
-        const result = await systemApi.getVersion();
-        setNodeVersion(result.version);
-      } catch {
-        setNodeVersion("未知");
-      }
-    };
-    loadNodeVersion();
+    setRuntimeEnv("Tauri 桌面应用");
   }, []);
 
   // 表单验证
@@ -380,12 +373,6 @@ export default function SettingsPage() {
     value: AdvancedConfig[K]
   ) => {
     setAdvancedConfig((prev) => ({ ...prev, [key]: value }));
-  };
-
-  // 格式化内存大小
-  const formatMemory = (bytes: number): string => {
-    const mb = bytes / 1024 / 1024;
-    return `${Math.round(mb)} MB`;
   };
 
   // 格式化运行时间
@@ -895,11 +882,9 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3.5 last:border-b-0">
                   <div className="flex items-center gap-2">
                     <Cpu className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
-                    <span className="text-[14px] font-medium">
-                      {isWebMode() ? "运行环境" : "Node.js 版本"}
-                    </span>
+                    <span className="text-[14px] font-medium">运行环境</span>
                   </div>
-                  <Badge variant="outline">{nodeVersion || "加载中..."}</Badge>
+                  <Badge variant="outline">{runtimeEnv || "加载中..."}</Badge>
                 </div>
 
                 {isWebMode() && (
@@ -934,12 +919,12 @@ export default function SettingsPage() {
               </div>
             </Card>
 
-            {/* Node.js 服务状态（仅 Tauri 模式） */}
+            {/* 服务状态（仅 Tauri 模式） */}
             {!isWebMode() && (
               <Card className="overflow-hidden">
                 <GroupHeader
                   title="服务状态"
-                  description="Node.js 后端服务运行状态"
+                  description="应用后端服务运行状态"
                 />
                 <div>
                   <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3.5 last:border-b-0">
@@ -959,17 +944,6 @@ export default function SettingsPage() {
                         </div>
                         <span className="text-[14px] tabular-nums text-muted-foreground">
                           {formatUptime(status.uptime)}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3.5 last:border-b-0">
-                        <div className="flex items-center gap-2">
-                          <HardDrive className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
-                          <span className="text-[14px] font-medium">内存使用</span>
-                        </div>
-                        <span className="text-[14px] tabular-nums text-muted-foreground">
-                          {formatMemory(status.memory.heapUsed)} /{" "}
-                          {formatMemory(status.memory.heapTotal)}
                         </span>
                       </div>
 

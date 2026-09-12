@@ -3,6 +3,7 @@ import { Minus, Square, Copy, X } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { isTauriEnv } from "@/lib/env";
 import { cn } from "@/lib/utils";
+import appIcon from "../../../src-tauri/icons/128x128.png";
 
 /**
  * 自定义标题栏
@@ -65,14 +66,12 @@ export function Titlebar() {
         onDoubleClick={handleToggleMaximize}
         className="flex h-full flex-1 items-center gap-2"
       >
-        <div className="flex h-[18px] w-[18px] items-center justify-center rounded-[5px] bg-gradient-to-br from-primary to-[#5ea8ff]">
-          <svg viewBox="0 0 24 24" className="h-3 w-3 text-white" aria-hidden>
-            <path
-              fill="currentColor"
-              d="M12 3.5 7.5 8h3v5.5h3V8h3L12 3.5ZM5.5 15.5h13V20a.5.5 0 0 1-.5.5H6a.5.5 0 0 1-.5-.5v-4.5Z"
-            />
-          </svg>
-        </div>
+        <img
+          src={appIcon}
+          alt="Lsky Studio"
+          draggable={false}
+          className="h-[18px] w-[18px] rounded-[5px] object-contain"
+        />
         <span
           data-tauri-drag-region
           className="text-[12px] font-medium tracking-[-0.01em] text-muted-foreground"
