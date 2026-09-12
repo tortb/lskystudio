@@ -14,16 +14,13 @@ import {
   Image,
   Loader2,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/layout/page-header";
 import { useToastActions } from "@/components/ui/toaster";
 import { useConfig } from "@/hooks/use-config";
 import { formatFileSize, formatDate } from "@/lib/utils";
@@ -38,6 +35,31 @@ interface HistoryRecord {
   thumbnailUrl?: string;
   createdAt: string;
   folderName?: string;
+}
+
+interface HistoryStatProps {
+  label: string;
+  value: string | number;
+  hint: string;
+  icon: LucideIcon;
+  tone?: string;
+}
+
+function HistoryStat({ label, value, hint, icon: Icon, tone }: HistoryStatProps) {
+  return (
+    <div className="rounded-lg border border-border/70 bg-card px-4 py-3.5">
+      <div className="flex items-center justify-between">
+        <span className="text-[12px] text-muted-foreground">{label}</span>
+        <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+      </div>
+      <div
+        className={`mt-1.5 text-[17px] font-semibold leading-none tabular-nums tracking-[-0.01em] ${tone ?? ""}`}
+      >
+        {value}
+      </div>
+      <p className="mt-1.5 text-[12px] text-muted-foreground">{hint}</p>
+    </div>
+  );
 }
 
 export default function HistoryPage() {
@@ -262,312 +284,296 @@ export default function HistoryPage() {
   const failedCount = records.filter((r) => r.status === "failed").length;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">历史记录</h2>
-          <p className="text-muted-foreground">查看上传历史记录</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-            刷新
-          </Button>
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="mr-2 h-4 w-4" />
-            导出
-          </Button>
-          <Button variant="destructive" onClick={handleClearAll}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            清空
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="历史记录"
+        description="查看上传历史记录"
+        actions={
+          <>
+            <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
+              <RefreshCw
+                className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+                strokeWidth={1.75}
+              />
+              刷新
+            </Button>
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="h-4 w-4" strokeWidth={1.75} />
+              导出
+            </Button>
+            <Button variant="destructive" onClick={handleClearAll}>
+              <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+              清空
+            </Button>
+          </>
+        }
+      />
 
       {/* 未配置提示 */}
       {!config?.apiUrl || !config?.apiToken ? (
         <Card>
-          <CardContent className="p-12">
-            <div className="flex flex-col items-center justify-center">
-              <Clock className="mb-4 h-12 w-12 text-muted-foreground" />
-              <h3 className="mb-2 text-lg font-medium">请先配置 API</h3>
-              <p className="mb-4 text-sm text-muted-foreground">
-                在设置页面配置 API 地址和 Token 后即可查看历史记录
-              </p>
-              <Button onClick={() => (window.location.href = "/settings")}>
-                前往设置
-              </Button>
-            </div>
-          </CardContent>
+          <EmptyState
+            icon={Clock}
+            title="请先配置 API"
+            description="在设置页面配置 API 地址和 Token 后即可查看历史记录"
+            action={{
+              label: "前往设置",
+              onClick: () => {
+                window.location.href = "/settings";
+              },
+            }}
+          />
         </Card>
       ) : (
         <>
-          {/* 统计卡片 */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">总记录数</CardTitle>
-                <Image className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{records.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  共 {formatFileSize(records.reduce((sum, r) => sum + r.fileSize, 0))}
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">成功数</CardTitle>
-                <CheckCircle className="h-4 w-4 text-success" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-success">{successCount}</div>
-                <p className="text-xs text-muted-foreground">
-                  {records.length > 0
-                    ? `${Math.round((successCount / records.length) * 100)}% 成功率`
-                    : "暂无数据"}
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">失败数</CardTitle>
-                <XCircle className="h-4 w-4 text-destructive" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-destructive">{failedCount}</div>
-                <p className="text-xs text-muted-foreground">
-                  {failedCount > 0 ? "需要处理" : "暂无失败"}
-                </p>
-              </CardContent>
-            </Card>
+          {/* 统计 */}
+          <div className="grid gap-3 md:grid-cols-3">
+            <HistoryStat
+              label="总记录数"
+              value={records.length}
+              hint={`共 ${formatFileSize(records.reduce((sum, r) => sum + r.fileSize, 0))}`}
+              icon={Image}
+            />
+            <HistoryStat
+              label="成功数"
+              value={successCount}
+              hint={
+                records.length > 0
+                  ? `${Math.round((successCount / records.length) * 100)}% 成功率`
+                  : "暂无数据"
+              }
+              icon={CheckCircle}
+              tone="text-success"
+            />
+            <HistoryStat
+              label="失败数"
+              value={failedCount}
+              hint={failedCount > 0 ? "需要处理" : "暂无失败"}
+              icon={XCircle}
+              tone={failedCount > 0 ? "text-destructive" : undefined}
+            />
           </div>
 
           {/* 搜索和筛选 */}
           <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="搜索文件名或文件夹..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant={statusFilter === "all" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setStatusFilter("all")}
-                  >
-                    全部
-                  </Button>
-                  <Button
-                    variant={statusFilter === "success" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setStatusFilter("success")}
-                  >
-                    <CheckCircle className="mr-1 h-3 w-3" />
-                    成功
-                  </Button>
-                  <Button
-                    variant={statusFilter === "failed" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setStatusFilter("failed")}
-                  >
-                    <XCircle className="mr-1 h-3 w-3" />
-                    失败
-                  </Button>
-                </div>
+            <div className="flex flex-col gap-3 p-4 md:flex-row md:items-center">
+              <div className="relative flex-1">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                  strokeWidth={1.75}
+                />
+                <Input
+                  placeholder="搜索文件名或文件夹..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                />
               </div>
-            </CardContent>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant={statusFilter === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("all")}
+                >
+                  全部
+                </Button>
+                <Button
+                  variant={statusFilter === "success" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("success")}
+                >
+                  <CheckCircle className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  成功
+                </Button>
+                <Button
+                  variant={statusFilter === "failed" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("failed")}
+                >
+                  <XCircle className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  失败
+                </Button>
+              </div>
+            </div>
           </Card>
 
-          {/* 历史记录表格 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>上传记录</CardTitle>
-              <CardDescription>
+          {/* 历史记录列表 */}
+          <Card className="overflow-hidden">
+            <div className="border-b border-border/70 px-5 py-3.5">
+              <h3 className="text-section">上传记录</h3>
+              <p className="mt-0.5 text-[12px] text-muted-foreground">
                 共 {filteredRecords.length} 条记录
-                {search && ` (搜索: "${search}")`}
-                {statusFilter !== "all" && ` (筛选: ${statusFilter === "success" ? "成功" : "失败"})`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <Loader2 className="mb-4 h-12 w-12 text-muted-foreground animate-spin" />
-                  <p className="text-sm text-muted-foreground">加载中...</p>
-                </div>
-              ) : filteredRecords.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <Clock className="mb-4 h-12 w-12 text-muted-foreground" />
-                  <h3 className="mb-2 text-lg font-medium">暂无记录</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {search || statusFilter !== "all"
-                      ? "没有找到匹配的记录"
-                      : "上传图片后将在此显示历史记录"}
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="pb-3 text-left font-medium">文件名</th>
-                          <th className="pb-3 text-left font-medium">大小</th>
-                          <th className="pb-3 text-left font-medium">状态</th>
-                          <th className="pb-3 text-left font-medium">时间</th>
-                          <th className="pb-3 text-left font-medium">操作</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paginatedRecords.map((record) => (
-                          <tr key={record.id} className="border-b">
-                            <td className="py-3">
-                              <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 overflow-hidden rounded bg-muted">
-                                  {record.thumbnailUrl || record.url ? (
-                                    <img
-                                      src={record.thumbnailUrl || record.url}
-                                      alt={record.fileName}
-                                      className="h-full w-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className="flex h-full w-full items-center justify-center">
-                                      <Image className="h-4 w-4 text-muted-foreground" />
-                                    </div>
-                                  )}
-                                </div>
-                                <div>
-                                  <p className="text-sm font-medium">{record.fileName}</p>
-                                  {record.folderName && (
-                                    <p className="text-xs text-muted-foreground">
-                                      {record.folderName}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-3 text-sm text-muted-foreground">
-                              {formatFileSize(record.fileSize)}
-                            </td>
-                            <td className="py-3">
-                              <Badge
-                                variant={
-                                  record.status === "success" ? "success" : "destructive"
-                                }
-                              >
-                                {record.status === "success" ? "成功" : "失败"}
-                              </Badge>
-                            </td>
-                            <td className="py-3 text-sm text-muted-foreground">
-                              {formatDate(record.createdAt)}
-                            </td>
-                            <td className="py-3">
-                              <div className="flex gap-1">
-                                {record.url && (
-                                  <>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                      onClick={() => copyUrl(record.url!)}
-                                    >
-                                      <Copy className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                                      <a
-                                        href={record.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                      >
-                                        <ExternalLink className="h-4 w-4" />
-                                      </a>
-                                    </Button>
-                                  </>
-                                )}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => handleDelete(record.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                {search && ` （搜索：“${search}”）`}
+                {statusFilter !== "all" &&
+                  ` （筛选：${statusFilter === "success" ? "成功" : "失败"}）`}
+              </p>
+            </div>
 
-                  {/* 分页 */}
-                  {totalPages > 1 && (
-                    <div className="mt-4 flex items-center justify-between">
-                      <p className="text-sm text-muted-foreground">
-                        第 {currentPage} 页，共 {totalPages} 页
-                      </p>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                          disabled={currentPage === 1}
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          const page = i + 1;
-                          return (
-                            <Button
-                              key={page}
-                              variant={currentPage === page ? "default" : "outline"}
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => setCurrentPage(page)}
-                            >
-                              {page}
-                            </Button>
-                          );
-                        })}
-                        {totalPages > 5 && (
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <Loader2
+                  className="mb-3 h-6 w-6 animate-spin text-muted-foreground"
+                  strokeWidth={1.75}
+                />
+                <p className="text-[14px] text-muted-foreground">加载中...</p>
+              </div>
+            ) : filteredRecords.length === 0 ? (
+              <EmptyState
+                icon={Clock}
+                title="暂无记录"
+                description={
+                  search || statusFilter !== "all"
+                    ? "没有找到匹配的记录"
+                    : "上传图片后将在此显示历史记录"
+                }
+              />
+            ) : (
+              <>
+                <div>
+                  {paginatedRecords.map((record) => (
+                    <div
+                      key={record.id}
+                      className="group flex items-center gap-3 border-b border-border/60 px-5 py-3 transition-colors last:border-b-0 hover:bg-secondary/50"
+                    >
+                      {/* 缩略图 */}
+                      <div className="h-9 w-9 shrink-0 overflow-hidden rounded-sm bg-secondary">
+                        {record.thumbnailUrl || record.url ? (
+                          <img
+                            src={record.thumbnailUrl || record.url}
+                            alt={record.fileName}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <Image className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 文件名 / 文件夹 */}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[14px] font-medium leading-tight">
+                          {record.fileName}
+                        </p>
+                        {record.folderName && (
+                          <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
+                            {record.folderName}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* 大小 */}
+                      <span className="hidden w-20 shrink-0 text-right text-[12px] tabular-nums text-muted-foreground sm:block">
+                        {formatFileSize(record.fileSize)}
+                      </span>
+
+                      {/* 状态 */}
+                      <Badge
+                        variant={record.status === "success" ? "success" : "destructive"}
+                        className="shrink-0"
+                      >
+                        {record.status === "success" ? "成功" : "失败"}
+                      </Badge>
+
+                      {/* 时间 */}
+                      <span className="hidden w-32 shrink-0 text-right text-[12px] tabular-nums text-muted-foreground md:block">
+                        {formatDate(record.createdAt)}
+                      </span>
+
+                      {/* 操作 */}
+                      <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                        {record.url && (
                           <>
-                            <span className="flex h-8 w-8 items-center justify-center text-sm text-muted-foreground">
-                              ...
-                            </span>
                             <Button
-                              variant={currentPage === totalPages ? "default" : "outline"}
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => setCurrentPage(totalPages)}
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => copyUrl(record.url!)}
+                              aria-label="复制链接"
                             >
-                              {totalPages}
+                              <Copy className="h-4 w-4" strokeWidth={1.75} />
+                            </Button>
+                            <Button variant="ghost" size="icon-sm" asChild>
+                              <a
+                                href={record.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="打开链接"
+                              >
+                                <ExternalLink className="h-4 w-4" strokeWidth={1.75} />
+                              </a>
                             </Button>
                           </>
                         )}
                         <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                          disabled={currentPage === totalPages}
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => handleDelete(record.id)}
+                          aria-label="删除"
                         >
-                          <ChevronRight className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" strokeWidth={1.75} />
                         </Button>
                       </div>
                     </div>
-                  )}
-                </>
-              )}
-            </CardContent>
+                  ))}
+                </div>
+
+                {/* 分页 */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between border-t border-border/60 px-5 py-3">
+                    <p className="text-[12px] tabular-nums text-muted-foreground">
+                      第 {currentPage} 页，共 {totalPages} 页
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        aria-label="上一页"
+                      >
+                        <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
+                      </Button>
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        const page = i + 1;
+                        return (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="icon-sm"
+                            onClick={() => setCurrentPage(page)}
+                          >
+                            {page}
+                          </Button>
+                        );
+                      })}
+                      {totalPages > 5 && (
+                        <>
+                          <span className="flex h-7 w-7 items-center justify-center text-[12px] text-muted-foreground">
+                            ...
+                          </span>
+                          <Button
+                            variant={currentPage === totalPages ? "default" : "outline"}
+                            size="icon-sm"
+                            onClick={() => setCurrentPage(totalPages)}
+                          >
+                            {totalPages}
+                          </Button>
+                        </>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                        aria-label="下一页"
+                      >
+                        <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </Card>
         </>
       )}

@@ -12,16 +12,13 @@ import {
   Settings,
   Image,
   Loader2,
+  ChevronRight,
 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import type { LucideIcon } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/layout/page-header";
 import { useSystem } from "@/hooks/use-system";
 import { useConfig } from "@/hooks/use-config";
 import { formatFileSize } from "@/lib/utils";
@@ -30,20 +27,25 @@ interface StatsCardProps {
   title: string;
   value: string | number;
   description?: string;
-  icon: typeof Upload;
+  icon: LucideIcon;
+  tone?: string;
 }
 
-function StatsCard({ title, value, description, icon: Icon }: StatsCardProps) {
+function StatsCard({ title, value, description, icon: Icon, tone }: StatsCardProps) {
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] text-muted-foreground">{title}</span>
+          <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+        </div>
+        <div
+          className={`mt-2 text-[17px] font-semibold leading-none tabular-nums tracking-[-0.01em] ${tone ?? ""}`}
+        >
+          {value}
+        </div>
         {description && (
-          <p className="text-xs text-muted-foreground">{description}</p>
+          <p className="mt-2 text-[12px] text-muted-foreground">{description}</p>
         )}
       </CardContent>
     </Card>
@@ -157,48 +159,50 @@ export default function DashboardPage() {
     return `${Math.round(mb)} MB`;
   };
 
+  const isConfigured = Boolean(config?.apiUrl && config?.apiToken);
+
+  const quickActions = [
+    { label: "上传图片", icon: Upload, to: "/upload" },
+    { label: "查看历史", icon: History, to: "/history" },
+    { label: "管理相册", icon: Image, to: "/albums" },
+    { label: "系统设置", icon: Settings, to: "/settings" },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">仪表盘</h2>
-        <p className="text-muted-foreground">
-          {config?.apiUrl && config?.apiToken
-            ? "系统运行正常，准备上传"
-            : "请先配置 API 信息"}
-        </p>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="仪表盘"
+        description={isConfigured ? "系统运行正常，准备上传" : "请先配置 API 信息"}
+      />
 
       {/* 未配置提示 */}
-      {!config?.apiUrl || !config?.apiToken ? (
+      {!isConfigured ? (
         <Card>
-          <CardContent className="p-12">
-            <div className="flex flex-col items-center justify-center">
-              <Settings className="mb-4 h-12 w-12 text-muted-foreground" />
-              <h3 className="mb-2 text-lg font-medium">欢迎使用 Lsky Studio</h3>
-              <p className="mb-4 text-sm text-muted-foreground text-center max-w-md">
-                请先在设置页面配置 API 地址和 Token，然后即可开始使用上传功能
-              </p>
-              <Button onClick={() => navigate("/settings")}>
-                <Settings className="mr-2 h-4 w-4" />
-                前往设置
-              </Button>
+          <CardContent className="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
+              <Settings className="h-7 w-7 text-muted-foreground" strokeWidth={1.5} />
             </div>
+            <h3 className="text-section">欢迎使用 Lsky Studio</h3>
+            <p className="mt-1.5 max-w-md text-[14px] leading-[1.5] text-muted-foreground">
+              请先在设置页面配置 API 地址和 Token，然后即可开始使用上传功能
+            </p>
+            <Button className="mt-6" onClick={() => navigate("/settings")}>
+              <Settings className="h-4 w-4" strokeWidth={1.75} />
+              前往设置
+            </Button>
           </CardContent>
         </Card>
       ) : isLoading ? (
         <Card>
-          <CardContent className="p-12">
-            <div className="flex flex-col items-center justify-center">
-              <Loader2 className="mb-4 h-12 w-12 text-muted-foreground animate-spin" />
-              <p className="text-sm text-muted-foreground">加载中...</p>
-            </div>
+          <CardContent className="flex flex-col items-center justify-center px-6 py-16">
+            <Loader2 className="mb-3 h-6 w-6 animate-spin text-muted-foreground" strokeWidth={1.75} />
+            <p className="text-[14px] text-muted-foreground">加载中…</p>
           </CardContent>
         </Card>
       ) : (
         <>
           {/* Stats Grid */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
             <StatsCard
               title="总上传数"
               value={stats.totalUploads}
@@ -210,6 +214,7 @@ export default function DashboardPage() {
               value={`${stats.successRate}%`}
               description="上传成功率"
               icon={CheckCircle}
+              tone="text-success"
             />
             <StatsCard
               title="今日上传"
@@ -222,145 +227,134 @@ export default function DashboardPage() {
               value={stats.failedUploads}
               description="上传失败数量"
               icon={XCircle}
+              tone={stats.failedUploads > 0 ? "text-destructive" : undefined}
             />
           </div>
 
           {/* Quick Actions and Recent Uploads */}
           <div className="grid gap-4 md:grid-cols-2">
             {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>快速操作</CardTitle>
-                <CardDescription>常用功能快捷入口</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-3">
-                  <Button
-                    variant="outline"
-                    className="justify-start"
-                    onClick={() => navigate("/upload")}
+            <Card className="overflow-hidden">
+              <div className="border-b border-border/70 px-5 py-3.5">
+                <h3 className="text-section">快速操作</h3>
+                <p className="mt-0.5 text-[12px] text-muted-foreground">
+                  常用功能快捷入口
+                </p>
+              </div>
+              <div>
+                {quickActions.map((action) => (
+                  <button
+                    key={action.to}
+                    type="button"
+                    onClick={() => navigate(action.to)}
+                    className="flex w-full items-center gap-3 border-b border-border/60 px-5 py-3 text-left transition-colors last:border-b-0 hover:bg-secondary/50"
                   >
-                    <Upload className="mr-2 h-4 w-4" />
-                    上传图片
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="justify-start"
-                    onClick={() => navigate("/history")}
-                  >
-                    <History className="mr-2 h-4 w-4" />
-                    查看历史
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="justify-start"
-                    onClick={() => navigate("/albums")}
-                  >
-                    <Image className="mr-2 h-4 w-4" />
-                    管理相册
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="justify-start"
-                    onClick={() => navigate("/settings")}
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    系统设置
-                  </Button>
-                </div>
-              </CardContent>
+                    <action.icon
+                      className="h-4 w-4 shrink-0 text-muted-foreground"
+                      strokeWidth={1.75}
+                    />
+                    <span className="flex-1 text-[14px] font-medium">
+                      {action.label}
+                    </span>
+                    <ChevronRight
+                      className="h-4 w-4 shrink-0 text-muted-foreground/70"
+                      strokeWidth={1.75}
+                    />
+                  </button>
+                ))}
+              </div>
             </Card>
 
             {/* Recent Uploads */}
-            <Card>
-              <CardHeader>
-                <CardTitle>最近上传</CardTitle>
-                <CardDescription>最近上传的图片记录</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {recentUploads.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8">
-                    <History className="mb-4 h-8 w-8 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">暂无上传记录</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {recentUploads.map((upload) => (
-                      <div
-                        key={upload.id}
-                        className="flex items-center justify-between rounded-lg border p-3"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 overflow-hidden rounded bg-muted">
-                            {upload.url ? (
-                              <img
-                                src={upload.url}
-                                alt={upload.fileName}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center">
-                                <Image className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">{upload.fileName}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatFileSize(upload.fileSize)}
-                            </p>
-                          </div>
+            <Card className="overflow-hidden">
+              <div className="border-b border-border/70 px-5 py-3.5">
+                <h3 className="text-section">最近上传</h3>
+                <p className="mt-0.5 text-[12px] text-muted-foreground">
+                  最近上传的图片记录
+                </p>
+              </div>
+              {recentUploads.length === 0 ? (
+                <div className="flex flex-col items-center justify-center px-6 py-12">
+                  <History className="mb-3 h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
+                  <p className="text-[14px] text-muted-foreground">暂无上传记录</p>
+                </div>
+              ) : (
+                <div>
+                  {recentUploads.map((upload) => (
+                    <div
+                      key={upload.id}
+                      className="flex items-center justify-between gap-3 border-b border-border/60 px-5 py-3 last:border-b-0"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="h-9 w-9 shrink-0 overflow-hidden rounded-sm bg-secondary">
+                          {upload.url ? (
+                            <img
+                              src={upload.url}
+                              alt={upload.fileName}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center">
+                              <Image className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                            </div>
+                          )}
                         </div>
-                        <Badge
-                          variant={upload.status === "success" ? "success" : "destructive"}
-                        >
-                          {upload.status === "success" ? "成功" : "失败"}
-                        </Badge>
+                        <div className="min-w-0">
+                          <p className="truncate text-[14px] font-medium leading-tight">
+                            {upload.fileName}
+                          </p>
+                          <p className="mt-0.5 text-[12px] tabular-nums text-muted-foreground">
+                            {formatFileSize(upload.fileSize)}
+                          </p>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
+                      <Badge
+                        variant={upload.status === "success" ? "success" : "destructive"}
+                      >
+                        {upload.status === "success" ? "成功" : "失败"}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Card>
           </div>
 
           {/* System Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle>系统状态</CardTitle>
-              <CardDescription>Node.js 服务状态</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Cpu className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">内存使用</span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    {status ? formatMemory(status.memory.heapUsed) : "N/A"}
-                  </span>
+          <Card className="overflow-hidden">
+            <div className="border-b border-border/70 px-5 py-3.5">
+              <h3 className="text-section">系统状态</h3>
+              <p className="mt-0.5 text-[12px] text-muted-foreground">Node.js 服务状态</p>
+            </div>
+            <div className="grid divide-y divide-border/60 md:grid-cols-3 md:divide-x md:divide-y-0">
+              <div className="flex items-center justify-between gap-3 px-5 py-4">
+                <div className="flex items-center gap-2">
+                  <Cpu className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                  <span className="text-[14px]">内存使用</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <HardDrive className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">堆内存总量</span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    {status ? formatMemory(status.memory.heapTotal) : "N/A"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">上传状态</span>
-                  </div>
-                  <Badge variant={status?.isUploading ? "default" : "secondary"}>
-                    {status?.isUploading ? "上传中" : "空闲"}
-                  </Badge>
-                </div>
+                <span className="text-[14px] tabular-nums text-muted-foreground">
+                  {status ? formatMemory(status.memory.heapUsed) : "—"}
+                </span>
               </div>
-            </CardContent>
+              <div className="flex items-center justify-between gap-3 px-5 py-4">
+                <div className="flex items-center gap-2">
+                  <HardDrive className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                  <span className="text-[14px]">堆内存总量</span>
+                </div>
+                <span className="text-[14px] tabular-nums text-muted-foreground">
+                  {status ? formatMemory(status.memory.heapTotal) : "—"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-3 px-5 py-4">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                  <span className="text-[14px]">上传状态</span>
+                </div>
+                <Badge variant={status?.isUploading ? "default" : "secondary"}>
+                  {status?.isUploading ? "上传中" : "空闲"}
+                </Badge>
+              </div>
+            </div>
           </Card>
         </>
       )}

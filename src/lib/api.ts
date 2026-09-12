@@ -5,6 +5,9 @@
  */
 
 import { WebUploadEngine, type EngineUploadFile } from "./upload-engine";
+import { isTauriEnv, isWebMode, markNodeBackendReady } from "./env";
+
+export { isWebMode };
 
 // 类型定义
 export interface AppConfig {
@@ -58,11 +61,8 @@ export interface SystemStatus {
   isUploading: boolean;
 }
 
-// 检测是否在 Tauri 环境中
-const isTauri = window.__TAURI__ !== undefined;
-
-/** 是否为 Web 模式（非 Tauri） */
-export const isWebMode = !isTauri;
+// 检测是否在 Tauri 环境中（Tauri v2 不注入 window.__TAURI__，需用 isTauri()）
+const isTauri = isTauriEnv;
 
 // 本地存储键名
 const CONFIG_STORAGE_KEY = "lsky_studio_config";
@@ -382,7 +382,7 @@ export const uploadApi = {
   },
 
   pause: async (taskIds?: string[]) => {
-    if (isTauri) {
+    if (!isWebMode()) {
       return ipcCall<{ paused: string[] }>("upload_pause", { taskIds });
     }
     const engine = getWebEngine();
@@ -390,7 +390,7 @@ export const uploadApi = {
   },
 
   resume: async (taskIds?: string[]) => {
-    if (isTauri) {
+    if (!isWebMode()) {
       return ipcCall<{ resumed: string[] }>("upload_resume", { taskIds });
     }
     const engine = getWebEngine();
@@ -406,7 +406,7 @@ export const uploadApi = {
   },
 
   getStatus: async (taskIds?: string[]) => {
-    if (isTauri) {
+    if (!isWebMode()) {
       return ipcCall<{ tasks: UploadTask[] }>("upload_status", { taskIds });
     }
     const engine = getWebEngine();
@@ -430,85 +430,88 @@ export const uploadApi = {
 };
 
 // 事件监听 API
+//
+// 同时订阅 Tauri 事件与前端引擎事件：Node 后端未就绪时由前端引擎产出事件，
+// 后端就绪后由 Node 产出，前端无需关心当前走的是哪条链路。
+function subscribeUploadEvent<T>(
+  eventName: string,
+  webListeners: WebEventCallback<T>[],
+  callback: WebEventCallback<T>,
+) {
+  let unlisten: (() => void) | undefined;
+
+  if (isTauriEnv) {
+    import("@tauri-apps/api/event")
+      .then(({ listen }) => listen(eventName, (event) => callback(event.payload as T)))
+      .then((fn) => {
+        unlisten = fn;
+      })
+      .catch(console.error);
+  }
+
+  webListeners.push(callback);
+
+  return () => {
+    unlisten?.();
+    const index = webListeners.indexOf(callback);
+    if (index >= 0) webListeners.splice(index, 1);
+  };
+}
+
 export const eventApi = {
   onNodeReady: async (callback: (payload: { version: string; pid: number }) => void) => {
-    if (!isTauri) return () => {};
+    if (!isTauriEnv) return () => {};
     const { listen } = await import("@tauri-apps/api/event");
-    return listen("node_ready", (event) => callback(event.payload as { version: string; pid: number }));
+    return listen("node_ready", (event) => {
+      markNodeBackendReady();
+      callback(event.payload as { version: string; pid: number });
+    });
   },
 
   onNodeError: async (callback: (payload: { code: string; message: string }) => void) => {
-    if (!isTauri) return () => {};
+    if (!isTauriEnv) return () => {};
     const { listen } = await import("@tauri-apps/api/event");
     return listen("node_error", (event) => callback(event.payload as { code: string; message: string }));
   },
 
-  onUploadProgress: async (callback: (payload: {
-    taskId: string;
-    fileName: string;
-    progress: number;
-    uploadedBytes?: number;
-    totalBytes?: number;
-    status: string;
-  }) => void) => {
-    if (isTauri) {
-      const { listen } = await import("@tauri-apps/api/event");
-      return listen("upload_progress", (event) => callback(event.payload as any));
-    }
-    // Web 模式
-    webEventCallbacks.upload_progress.push(callback);
-    return () => {
-      const idx = webEventCallbacks.upload_progress.indexOf(callback);
-      if (idx >= 0) webEventCallbacks.upload_progress.splice(idx, 1);
-    };
-  },
+  onUploadProgress: async (
+    callback: (payload: {
+      taskId: string;
+      fileName: string;
+      progress: number;
+      uploadedBytes?: number;
+      totalBytes?: number;
+      status: string;
+    }) => void,
+  ) => subscribeUploadEvent("upload_progress", webEventCallbacks.upload_progress, callback),
 
-  onUploadComplete: async (callback: (payload: {
-    taskId: string;
-    fileName: string;
-    url: string;
-    thumbnailUrl?: string;
-  }) => void) => {
-    if (isTauri) {
-      const { listen } = await import("@tauri-apps/api/event");
-      return listen("upload_complete", (event) => callback(event.payload as any));
-    }
-    webEventCallbacks.upload_complete.push(callback);
-    return () => {
-      const idx = webEventCallbacks.upload_complete.indexOf(callback);
-      if (idx >= 0) webEventCallbacks.upload_complete.splice(idx, 1);
-    };
-  },
+  onUploadComplete: async (
+    callback: (payload: {
+      taskId: string;
+      fileName: string;
+      url: string;
+      thumbnailUrl?: string;
+    }) => void,
+  ) => subscribeUploadEvent("upload_complete", webEventCallbacks.upload_complete, callback),
 
-  onUploadError: async (callback: (payload: {
-    taskId: string;
-    fileName: string;
-    errorCode: string;
-    errorMessage: string;
-    retryable: boolean;
-  }) => void) => {
-    if (isTauri) {
-      const { listen } = await import("@tauri-apps/api/event");
-      return listen("upload_error", (event) => callback(event.payload as any));
-    }
-    webEventCallbacks.upload_error.push(callback);
-    return () => {
-      const idx = webEventCallbacks.upload_error.indexOf(callback);
-      if (idx >= 0) webEventCallbacks.upload_error.splice(idx, 1);
-    };
-  },
+  onUploadError: async (
+    callback: (payload: {
+      taskId: string;
+      fileName: string;
+      errorCode: string;
+      errorMessage: string;
+      retryable: boolean;
+    }) => void,
+  ) => subscribeUploadEvent("upload_error", webEventCallbacks.upload_error, callback),
 
-  onUploadTasksCreated: async (callback: (payload: { tasks: UploadTask[] }) => void) => {
-    if (isTauri) {
-      const { listen } = await import("@tauri-apps/api/event");
-      return listen("upload_tasks_created", (event) => callback(event.payload as { tasks: UploadTask[] }));
-    }
-    webEventCallbacks.upload_tasks_created.push(callback);
-    return () => {
-      const idx = webEventCallbacks.upload_tasks_created.indexOf(callback);
-      if (idx >= 0) webEventCallbacks.upload_tasks_created.splice(idx, 1);
-    };
-  },
+  onUploadTasksCreated: async (
+    callback: (payload: { tasks: UploadTask[] }) => void,
+  ) =>
+    subscribeUploadEvent(
+      "upload_tasks_created",
+      webEventCallbacks.upload_tasks_created,
+      callback,
+    ),
 };
 
 // 本地配置 API（支持 localStorage 和 Tauri 存储）

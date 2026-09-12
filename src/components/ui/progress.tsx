@@ -12,9 +12,9 @@ const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
     const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
 
     const sizeClasses = {
-      sm: "h-2",
-      default: "h-4",
-      lg: "h-6",
+      sm: "h-1",
+      default: "h-1.5",
+      lg: "h-2.5",
     };
 
     return (
@@ -28,7 +28,7 @@ const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
         {...props}
       >
         <div
-          className="h-full w-full flex-1 bg-primary transition-all"
+          className="h-full w-full flex-1 rounded-full bg-primary transition-transform duration-300 ease-out"
           style={{ transform: `translateX(-${100 - percentage}%)` }}
         />
       </div>

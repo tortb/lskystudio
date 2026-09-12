@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   Upload,
   CheckCircle,
@@ -5,12 +6,6 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { formatFileSize, formatDuration } from "@/lib/utils";
 
 interface UploadStatsProps {
@@ -23,6 +18,38 @@ interface UploadStatsProps {
   uploadedSize: number;
   startTime?: Date | null;
   className?: string;
+}
+
+function StatTile({
+  label,
+  value,
+  hint,
+  icon,
+  tone,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+  icon: ReactNode;
+  tone?: string;
+}) {
+  return (
+    <div className="rounded-lg border border-border/70 bg-card px-4 py-3.5">
+      <div className="flex items-center justify-between">
+        <span className="text-[12px] text-muted-foreground">{label}</span>
+        {icon}
+      </div>
+      <div
+        className={cn(
+          "mt-1.5 text-[17px] font-semibold leading-none tabular-nums tracking-[-0.01em]",
+          tone,
+        )}
+      >
+        {value}
+      </div>
+      <p className="mt-1.5 text-[12px] text-muted-foreground">{hint}</p>
+    </div>
+  );
 }
 
 export function UploadStats({
@@ -54,66 +81,40 @@ export function UploadStats({
   const eta = calculateETA();
 
   return (
-    <div className={cn("grid gap-4 md:grid-cols-2 lg:grid-cols-4", className)}>
-      {/* 总文件数 */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">总文件数</CardTitle>
-          <Upload className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{totalFiles}</div>
-          <p className="text-xs text-muted-foreground">
-            {formatFileSize(totalSize)}
-          </p>
-        </CardContent>
-      </Card>
+    <div className={cn("grid gap-3 md:grid-cols-2 lg:grid-cols-4", className)}>
+      <StatTile
+        label="总文件数"
+        value={String(totalFiles)}
+        hint={formatFileSize(totalSize)}
+        icon={<Upload className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />}
+      />
 
-      {/* 成功数 */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">上传成功</CardTitle>
-          <CheckCircle className="h-4 w-4 text-success" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-success">{successCount}</div>
-          <p className="text-xs text-muted-foreground">
-            {totalFiles > 0
-              ? `${Math.round((successCount / totalFiles) * 100)}% 成功率`
-              : "暂无数据"}
-          </p>
-        </CardContent>
-      </Card>
+      <StatTile
+        label="上传成功"
+        value={String(successCount)}
+        hint={
+          totalFiles > 0
+            ? `${Math.round((successCount / totalFiles) * 100)}% 成功率`
+            : "暂无数据"
+        }
+        tone="text-success"
+        icon={<CheckCircle className="h-4 w-4 text-success" strokeWidth={1.75} />}
+      />
 
-      {/* 失败数 */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">上传失败</CardTitle>
-          <XCircle className="h-4 w-4 text-destructive" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-destructive">{failedCount}</div>
-          <p className="text-xs text-muted-foreground">
-            {failedCount > 0 ? "点击重试失败项" : "暂无失败"}
-          </p>
-        </CardContent>
-      </Card>
+      <StatTile
+        label="上传失败"
+        value={String(failedCount)}
+        hint={failedCount > 0 ? "点击重试失败项" : "暂无失败"}
+        tone={failedCount > 0 ? "text-destructive" : undefined}
+        icon={<XCircle className="h-4 w-4 text-destructive" strokeWidth={1.75} />}
+      />
 
-      {/* 上传速度 */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">上传速度</CardTitle>
-          <Zap className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {speed > 0 ? `${formatFileSize(speed)}/s` : "N/A"}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {eta > 0 ? `预计剩余 ${formatDuration(eta)}` : "等待上传"}
-          </p>
-        </CardContent>
-      </Card>
+      <StatTile
+        label="上传速度"
+        value={speed > 0 ? `${formatFileSize(speed)}/s` : "—"}
+        hint={eta > 0 ? `预计剩余 ${formatDuration(eta)}` : "等待上传"}
+        icon={<Zap className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />}
+      />
     </div>
   );
 }

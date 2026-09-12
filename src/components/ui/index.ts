@@ -13,6 +13,5 @@ export * from "./scroll-area";
 export * from "./select";
 export * from "./separator";
 export * from "./tabs";
-export * from "./toast";
 export * from "./toaster";
 export * from "./tooltip";

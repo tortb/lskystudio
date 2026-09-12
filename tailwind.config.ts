@@ -49,9 +49,31 @@ const config: Config = {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        // Apple 规范：不同层级用不同圆角，避免"一刀切"
+        sm: "6px", // 缩略图 / 头像
+        DEFAULT: "8px",
+        md: "8px", // 按钮 / 输入框
+        lg: "12px", // 卡片 / 面板
+        xl: "16px", // 弹窗 / Toast
+        "2xl": "20px",
+      },
+      fontFamily: {
+        sans: [
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "SF Pro Text",
+          "PingFang SC",
+          "Microsoft YaHei",
+          "Segoe UI",
+          "Roboto",
+          "sans-serif",
+        ],
+      },
+      boxShadow: {
+        // 仅悬浮层使用阴影，普通卡片以 1px 分隔线代替
+        card: "0 1px 2px 0 hsl(var(--foreground) / 0.04)",
+        popover:
+          "0 10px 34px -8px hsl(var(--foreground) / 0.18), 0 2px 8px -2px hsl(var(--foreground) / 0.08)",
       },
       keyframes: {
         "accordion-down": {

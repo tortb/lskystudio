@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, type DragEvent } from "react";
-import { Upload } from "lucide-react";
+import { ImagePlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatFileSize } from "@/lib/utils";
 
@@ -104,11 +104,11 @@ export function FileDropzone({
   return (
     <div
       className={cn(
-        "relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-all duration-200 cursor-pointer",
+        "group relative flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-8 py-14 text-center transition-colors duration-200",
         isDragActive
-          ? "border-primary bg-primary/5 scale-[1.02]"
-          : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50",
-        disabled && "opacity-50 cursor-not-allowed",
+          ? "border-primary bg-primary/[0.04]"
+          : "border-border hover:border-muted-foreground/40 hover:bg-secondary/40",
+        disabled && "pointer-events-none cursor-not-allowed opacity-50",
         className,
       )}
       onDragEnter={handleDragEnter}
@@ -129,27 +129,21 @@ export function FileDropzone({
 
       <div
         className={cn(
-          "mb-4 rounded-full p-3 transition-all duration-200",
+          "mb-4 flex h-12 w-12 items-center justify-center rounded-full transition-colors duration-200",
           isDragActive
-            ? "bg-primary text-primary-foreground scale-110"
-            : "bg-muted text-muted-foreground",
+            ? "bg-primary text-primary-foreground"
+            : "bg-secondary text-muted-foreground",
         )}
       >
-        <Upload className="h-8 w-8" />
+        <ImagePlus className="h-[22px] w-[22px]" strokeWidth={1.75} />
       </div>
 
-      <div className="text-center">
-        <p className="mb-1 text-sm font-medium">
-          {isDragActive ? "释放文件以上传" : "拖拽文件到此处或点击选择"}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          支持 JPG、PNG、GIF、WebP 等图片格式，最大 {formatFileSize(maxSize)}
-        </p>
-      </div>
-
-      {isDragActive && (
-        <div className="absolute inset-0 rounded-lg border-2 border-primary animate-pulse" />
-      )}
+      <p className="text-[17px] font-medium text-foreground">
+        {isDragActive ? "释放以上传" : "拖拽图片到此处，或点击选择"}
+      </p>
+      <p className="mt-1 text-[12px] text-muted-foreground">
+        支持 JPG、PNG、GIF、WebP 等格式，单文件最大 {formatFileSize(maxSize)}
+      </p>
     </div>
   );
 }

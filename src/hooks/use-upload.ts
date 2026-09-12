@@ -143,7 +143,7 @@ export function useUpload() {
           concurrency: concurrency || 3,
         };
 
-        if (isWebMode) {
+        if (isWebMode()) {
           // Web 模式：使用引擎的 resumeUpload
           const engine = uploadApi.getWebEngine();
           if (engine) {
@@ -200,7 +200,7 @@ export function useUpload() {
       );
 
       // Web 模式：如果引擎有 pending 任务，需要重新启动队列
-      if (isWebMode && uploadParamsRef.current) {
+      if (isWebMode() && uploadParamsRef.current) {
         const engine = uploadApi.getWebEngine();
         if (engine) {
           const { apiUrl, token, storageId } = uploadParamsRef.current;
@@ -241,7 +241,7 @@ export function useUpload() {
 
     const { apiUrl, token, storageId } = uploadParamsRef.current;
 
-    if (isWebMode) {
+    if (isWebMode()) {
       const engine = uploadApi.getWebEngine();
       if (engine) {
         const result = engine.retryFailed(apiUrl, token, storageId);
@@ -271,7 +271,7 @@ export function useUpload() {
     setTasks([]);
     setHasCheckpoint(false);
     UploadCheckpoint.clear();
-    if (isWebMode) {
+    if (isWebMode()) {
       uploadApi.destroyWebEngine();
     }
   }, []);

@@ -15,7 +15,6 @@ import {
   Cpu,
   HardDrive,
   Globe,
-  Copy,
   ImageIcon,
   Zap,
   RotateCcw,
@@ -24,24 +23,20 @@ import {
   Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToastActions } from "@/components/ui/toaster";
+import { PageHeader } from "@/components/layout/page-header";
+import { StatusIndicator } from "@/components/shared/status-indicator";
 import { useTheme } from "@/hooks/use-theme";
 import { useConfig, useStrategies, useTestConnection } from "@/hooks/use-config";
 import { useSystem } from "@/hooks/use-system";
 import { appApi, systemApi, isWebMode } from "@/lib/api";
 import { APP_VERSION } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 // 扩展配置类型
 interface AdvancedConfig {
@@ -60,6 +55,64 @@ interface FormErrors {
   retryCount?: string;
   retryDelay?: string;
   compressQuality?: string;
+}
+
+// 分组卡片标题
+function GroupHeader({
+  title,
+  description,
+  action,
+}: {
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-border/70 px-5 py-3.5">
+      <div className="min-w-0">
+        <h3 className="text-section">{title}</h3>
+        {description && (
+          <p className="mt-0.5 text-[12px] text-muted-foreground">{description}</p>
+        )}
+      </div>
+      {action && <div className="shrink-0">{action}</div>}
+    </div>
+  );
+}
+
+// 设置行
+function SettingRow({
+  title,
+  description,
+  htmlFor,
+  children,
+}: {
+  title: React.ReactNode;
+  description?: string;
+  htmlFor?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3.5 last:border-b-0">
+      <div className="min-w-0">
+        <Label htmlFor={htmlFor}>{title}</Label>
+        {description && (
+          <div className="mt-0.5 text-[12px] text-muted-foreground">{description}</div>
+        )}
+      </div>
+      {children && <div className="shrink-0">{children}</div>}
+    </div>
+  );
+}
+
+// 行内错误提示
+function FieldError({ message }: { message: string }) {
+  return (
+    <p className="mt-1 flex items-center gap-1 text-[12px] text-destructive">
+      <AlertTriangle className="h-3 w-3" strokeWidth={1.75} />
+      {message}
+    </p>
+  );
 }
 
 export default function SettingsPage() {
@@ -129,7 +182,7 @@ export default function SettingsPage() {
 
   // 加载 Node.js 版本（仅 Tauri 模式）
   useEffect(() => {
-    if (isWebMode) {
+    if (isWebMode()) {
       setNodeVersion(`浏览器模式 (${navigator.userAgent.match(/Chrome\/[\d.]+|Firefox\/[\d.]+|Safari\/[\d.]+/)?.[0] || "Unknown"})`);
       return;
     }
@@ -346,28 +399,27 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">设置</h2>
-          <p className="text-muted-foreground">配置应用参数</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleImportConfig}>
-            <Upload className="mr-2 h-4 w-4" />
-            导入配置
-          </Button>
-          <Button variant="outline" onClick={handleExportConfig}>
-            <Download className="mr-2 h-4 w-4" />
-            导出配置
-          </Button>
-          <Button onClick={handleSave} disabled={isLoading}>
-            <Save className="mr-2 h-4 w-4" />
-            保存配置
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="设置"
+        description="配置应用参数"
+        actions={
+          <>
+            <Button variant="outline" onClick={handleImportConfig}>
+              <Upload className="h-4 w-4" strokeWidth={1.75} />
+              导入配置
+            </Button>
+            <Button variant="outline" onClick={handleExportConfig}>
+              <Download className="h-4 w-4" strokeWidth={1.75} />
+              导出配置
+            </Button>
+            <Button onClick={handleSave} disabled={isLoading}>
+              <Save className="h-4 w-4" strokeWidth={1.75} />
+              保存配置
+            </Button>
+          </>
+        }
+      />
 
       {/* 隐藏的文件输入 */}
       <input
@@ -378,127 +430,140 @@ export default function SettingsPage() {
         onChange={handleFileChange}
       />
 
-      {/* Tabs 组件 */}
       <Tabs defaultValue="basic">
         <TabsList>
           <TabsTrigger value="basic">
-            <Settings2 className="mr-2 h-4 w-4" />
+            <Settings2 className="mr-1.5 h-4 w-4" strokeWidth={1.75} />
             基础设置
           </TabsTrigger>
           <TabsTrigger value="advanced">
-            <Zap className="mr-2 h-4 w-4" />
+            <Zap className="mr-1.5 h-4 w-4" strokeWidth={1.75} />
             高级设置
           </TabsTrigger>
           <TabsTrigger value="about">
-            <Info className="mr-2 h-4 w-4" />
+            <Info className="mr-1.5 h-4 w-4" strokeWidth={1.75} />
             关于
           </TabsTrigger>
         </TabsList>
 
         {/* 基础设置 */}
-        <TabsContent value="basic">
-          <div className="space-y-6">
+        <TabsContent value="basic" className="mt-5">
+          <div className="space-y-5">
             {/* API Configuration */}
-            <Card>
-              <CardHeader>
-                <CardTitle>API 配置</CardTitle>
-                <CardDescription>配置兰空图床 API 连接信息</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="apiUrl">
-                    API 地址
-                    <span className="text-destructive ml-1">*</span>
-                  </Label>
-                  <Input
-                    id="apiUrl"
-                    placeholder="https://your-domain.com"
-                    value={apiUrl}
-                    onChange={(e) => {
-                      setApiUrl(e.target.value);
-                      clearFieldError("apiUrl");
-                    }}
-                    className={errors.apiUrl ? "border-destructive" : ""}
-                  />
-                  {errors.apiUrl && (
-                    <p className="text-sm text-destructive flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" />
-                      {errors.apiUrl}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="token">
-                    API Token
-                    <span className="text-destructive ml-1">*</span>
-                  </Label>
-                  <Input
-                    id="token"
-                    type="password"
-                    placeholder="请输入 API Token"
-                    value={token}
-                    onChange={(e) => {
-                      setToken(e.target.value);
-                      clearFieldError("token");
-                    }}
-                    className={errors.token ? "border-destructive" : ""}
-                  />
-                  {errors.token && (
-                    <p className="text-sm text-destructive flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" />
-                      {errors.token}
-                    </p>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={handleTestConnection}
-                    disabled={isTesting}
-                  >
-                    <TestTube className="mr-2 h-4 w-4" />
-                    {isTesting ? "测试中..." : "测试连接"}
-                  </Button>
-                  {testResult && (
-                    <div className="flex items-center gap-2">
-                      {testResult.success ? (
+            <Card className="overflow-hidden">
+              <GroupHeader
+                title="API 配置"
+                description="配置兰空图床 API 连接信息"
+              />
+              <div>
+                <SettingRow
+                  title={
+                    <>
+                      API 地址
+                      <span className="ml-0.5 text-destructive">*</span>
+                    </>
+                  }
+                  htmlFor="apiUrl"
+                >
+                  <div className="w-[280px]">
+                    <Input
+                      id="apiUrl"
+                      placeholder="https://your-domain.com"
+                      value={apiUrl}
+                      onChange={(e) => {
+                        setApiUrl(e.target.value);
+                        clearFieldError("apiUrl");
+                      }}
+                      className={cn(errors.apiUrl && "border-destructive")}
+                    />
+                    {errors.apiUrl && <FieldError message={errors.apiUrl} />}
+                  </div>
+                </SettingRow>
+
+                <SettingRow
+                  title={
+                    <>
+                      API Token
+                      <span className="ml-0.5 text-destructive">*</span>
+                    </>
+                  }
+                  htmlFor="token"
+                >
+                  <div className="w-[280px]">
+                    <Input
+                      id="token"
+                      type="password"
+                      placeholder="请输入 API Token"
+                      value={token}
+                      onChange={(e) => {
+                        setToken(e.target.value);
+                        clearFieldError("token");
+                      }}
+                      className={cn(errors.token && "border-destructive")}
+                    />
+                    {errors.token && <FieldError message={errors.token} />}
+                  </div>
+                </SettingRow>
+
+                <SettingRow
+                  title="连接测试"
+                  description="验证 API 地址与 Token 是否可用"
+                >
+                  <div className="flex items-center gap-2">
+                    {testResult &&
+                      (testResult.success ? (
                         <Badge variant="success">
-                          <CheckCircle className="mr-1 h-3 w-3" />
+                          <CheckCircle className="mr-1 h-3 w-3" strokeWidth={1.75} />
                           连接成功
                         </Badge>
                       ) : (
                         <Badge variant="destructive">
-                          <XCircle className="mr-1 h-3 w-3" />
+                          <XCircle className="mr-1 h-3 w-3" strokeWidth={1.75} />
                           连接失败
                         </Badge>
-                      )}
-                      {testResult.version && (
-                        <span className="text-sm text-muted-foreground">
-                          版本: {testResult.version}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
+                      ))}
+                    {testResult?.version && (
+                      <span className="text-[12px] tabular-nums text-muted-foreground">
+                        版本: {testResult.version}
+                      </span>
+                    )}
+                    <Button
+                      variant="outline"
+                      onClick={handleTestConnection}
+                      disabled={isTesting}
+                    >
+                      <TestTube className="h-4 w-4" strokeWidth={1.75} />
+                      {isTesting ? "测试中..." : "测试连接"}
+                    </Button>
+                  </div>
+                </SettingRow>
+
                 {testResult && !testResult.success && testResult.error && (
-                  <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
-                    <p className="text-sm text-destructive font-medium">错误详情：</p>
-                    <p className="text-sm text-destructive/80 mt-1">{testResult.error}</p>
+                  <div className="border-b border-border/60 px-5 py-3.5 last:border-b-0">
+                    <div className="text-[14px] font-medium text-destructive">
+                      错误详情
+                    </div>
+                    <p className="mt-0.5 break-all text-[12px] text-destructive/80">
+                      {testResult.error}
+                    </p>
                   </div>
                 )}
-              </CardContent>
+              </div>
             </Card>
 
             {/* Storage Strategy */}
-            <Card>
-              <CardHeader>
-                <CardTitle>存储策略</CardTitle>
-                <CardDescription>选择存储策略</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="strategyId">存储策略 ID</Label>
-                  <div className="flex gap-2">
+            <Card className="overflow-hidden">
+              <GroupHeader
+                title="存储策略"
+                description="选择存储策略"
+              />
+              <div>
+                <SettingRow
+                  title="存储策略 ID"
+                  description="选择图片上传所使用的存储策略"
+                  htmlFor="strategyId"
+                >
+                  <div className="flex w-[280px] items-center gap-2">
                     <Input
                       id="strategyId"
                       placeholder="1"
@@ -509,34 +574,45 @@ export default function SettingsPage() {
                       variant="outline"
                       onClick={() => loadStrategies(apiUrl, token)}
                     >
-                      <RefreshCw className="mr-2 h-4 w-4" />
+                      <RefreshCw className="h-4 w-4" strokeWidth={1.75} />
                       刷新
                     </Button>
                   </div>
-                </div>
+                </SettingRow>
+
                 {strategies.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>可用策略（点击选择）</Label>
-                    <div className="grid gap-2">
+                  <div className="border-b border-border/60 px-5 py-3.5 last:border-b-0">
+                    <div className="mb-2 text-[12px] text-muted-foreground">
+                      可用策略（点击选择）
+                    </div>
+                    <div className="space-y-2">
                       {strategies.map((strategy) => (
                         <div
                           key={strategy.id}
-                          className={`flex items-center justify-between rounded-lg border p-3 cursor-pointer transition-colors ${
+                          className={cn(
+                            "flex cursor-pointer items-center justify-between gap-3 rounded-md border px-3.5 py-2.5 transition-colors",
                             strategyId === String(strategy.id)
                               ? "border-primary bg-primary/5"
-                              : "hover:bg-muted/50"
-                          }`}
+                              : "border-border/70 hover:bg-secondary/50"
+                          )}
                           onClick={() => setStrategyId(String(strategy.id))}
                         >
-                          <div>
-                            <p className="text-sm font-medium">
+                          <div className="min-w-0">
+                            <p className="truncate text-[14px] font-medium">
                               {strategy.name}
                             </p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
                               {strategy.description || strategy.provider}
                             </p>
                           </div>
-                          <Badge variant={strategyId === String(strategy.id) ? "default" : "outline"}>
+                          <Badge
+                            variant={
+                              strategyId === String(strategy.id)
+                                ? "default"
+                                : "outline"
+                            }
+                            className="shrink-0 tabular-nums"
+                          >
                             ID: {strategy.id}
                           </Badge>
                         </div>
@@ -544,443 +620,390 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 )}
+
                 {strategies.length === 0 && apiUrl && token && (
-                  <div className="text-sm text-muted-foreground">
+                  <div className="border-b border-border/60 px-5 py-3.5 text-[12px] text-muted-foreground last:border-b-0">
                     点击"刷新"按钮获取存储策略列表
                   </div>
                 )}
-              </CardContent>
+              </div>
             </Card>
 
             {/* Upload Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle>上传设置</CardTitle>
-                <CardDescription>配置上传参数</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="concurrency">并发上传数</Label>
-                  <Input
-                    id="concurrency"
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={concurrency}
-                    onChange={(e) => {
-                      setConcurrency(e.target.value);
-                      clearFieldError("concurrency");
-                    }}
-                    className={errors.concurrency ? "border-destructive" : ""}
-                  />
-                  {errors.concurrency && (
-                    <p className="text-sm text-destructive flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" />
-                      {errors.concurrency}
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    建议设置为 3-5，过高可能导致网络拥堵
-                  </p>
-                </div>
-              </CardContent>
+            <Card className="overflow-hidden">
+              <GroupHeader title="上传设置" description="配置上传参数" />
+              <div>
+                <SettingRow
+                  title="并发上传数"
+                  description="建议设置为 3-5，过高可能导致网络拥堵"
+                  htmlFor="concurrency"
+                >
+                  <div className="w-[120px]">
+                    <Input
+                      id="concurrency"
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={concurrency}
+                      onChange={(e) => {
+                        setConcurrency(e.target.value);
+                        clearFieldError("concurrency");
+                      }}
+                      className={cn(
+                        "tabular-nums",
+                        errors.concurrency && "border-destructive"
+                      )}
+                    />
+                    {errors.concurrency && (
+                      <FieldError message={errors.concurrency} />
+                    )}
+                  </div>
+                </SettingRow>
+              </div>
             </Card>
 
             {/* Appearance Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle>外观设置</CardTitle>
-                <CardDescription>配置应用外观</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>主题</Label>
-                  <div className="flex gap-2">
+            <Card className="overflow-hidden">
+              <GroupHeader title="外观设置" description="配置应用外观" />
+              <div>
+                <SettingRow title="主题" description="选择应用的外观主题">
+                  <div className="flex items-center gap-2">
                     <Button
                       variant={theme === "light" ? "default" : "outline"}
                       onClick={() => setTheme("light")}
                     >
-                      <Sun className="mr-2 h-4 w-4" />
+                      <Sun className="h-4 w-4" strokeWidth={1.75} />
                       浅色
                     </Button>
                     <Button
                       variant={theme === "dark" ? "default" : "outline"}
                       onClick={() => setTheme("dark")}
                     >
-                      <Moon className="mr-2 h-4 w-4" />
+                      <Moon className="h-4 w-4" strokeWidth={1.75} />
                       深色
                     </Button>
                     <Button
                       variant={theme === "system" ? "default" : "outline"}
                       onClick={() => setTheme("system")}
                     >
-                      <Monitor className="mr-2 h-4 w-4" />
+                      <Monitor className="h-4 w-4" strokeWidth={1.75} />
                       跟随系统
                     </Button>
                   </div>
-                </div>
-              </CardContent>
+                </SettingRow>
+              </div>
             </Card>
           </div>
         </TabsContent>
 
         {/* 高级设置 */}
-        <TabsContent value="advanced">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>高级设置</CardTitle>
-                    <CardDescription>配置高级上传参数</CardDescription>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={handleResetAdvanced}>
-                    <RotateCcw className="mr-2 h-4 w-4" />
+        <TabsContent value="advanced" className="mt-5">
+          <div className="space-y-5">
+            <Card className="overflow-hidden">
+              <GroupHeader
+                title="高级设置"
+                description="配置高级上传参数"
+                action={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleResetAdvanced}
+                  >
+                    <RotateCcw className="h-4 w-4" strokeWidth={1.75} />
                     重置默认
                   </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* 重试配置 */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <RefreshCw className="h-4 w-4 text-muted-foreground" />
-                    <Label className="text-base font-medium">重试配置</Label>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="retryCount">重试次数</Label>
-                      <Input
-                        id="retryCount"
-                        type="number"
-                        min="0"
-                        max="10"
-                        value={advancedConfig.retryCount}
-                        onChange={(e) => {
-                          updateAdvancedConfig(
-                            "retryCount",
-                            parseInt(e.target.value) || 0
-                          );
-                          clearFieldError("retryCount");
-                        }}
-                        className={
-                          errors.retryCount ? "border-destructive" : ""
-                        }
-                      />
-                      {errors.retryCount && (
-                        <p className="text-sm text-destructive flex items-center gap-1">
-                          <AlertTriangle className="h-3 w-3" />
-                          {errors.retryCount}
-                        </p>
+                }
+              />
+              <div>
+                <SettingRow
+                  title="重试次数"
+                  description="上传失败后的重试次数，设为 0 则不重试"
+                  htmlFor="retryCount"
+                >
+                  <div className="w-[120px]">
+                    <Input
+                      id="retryCount"
+                      type="number"
+                      min="0"
+                      max="10"
+                      value={advancedConfig.retryCount}
+                      onChange={(e) => {
+                        updateAdvancedConfig(
+                          "retryCount",
+                          parseInt(e.target.value) || 0
+                        );
+                        clearFieldError("retryCount");
+                      }}
+                      className={cn(
+                        "tabular-nums",
+                        errors.retryCount && "border-destructive"
                       )}
-                      <p className="text-xs text-muted-foreground">
-                        上传失败后的重试次数，设为 0 则不重试
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="retryDelay">重试延迟 (毫秒)</Label>
-                      <Input
-                        id="retryDelay"
-                        type="number"
-                        min="0"
-                        max="60000"
-                        step="100"
-                        value={advancedConfig.retryDelay}
-                        onChange={(e) => {
-                          updateAdvancedConfig(
-                            "retryDelay",
-                            parseInt(e.target.value) || 0
-                          );
-                          clearFieldError("retryDelay");
-                        }}
-                        className={
-                          errors.retryDelay ? "border-destructive" : ""
-                        }
-                      />
-                      {errors.retryDelay && (
-                        <p className="text-sm text-destructive flex items-center gap-1">
-                          <AlertTriangle className="h-3 w-3" />
-                          {errors.retryDelay}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        每次重试之间的等待时间
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* 上传行为 */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-muted-foreground" />
-                    <Label className="text-base font-medium">上传行为</Label>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-2">
-                          <Copy className="h-4 w-4 text-muted-foreground" />
-                          <Label>自动复制 URL</Label>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          上传完成后自动将图片 URL 复制到剪贴板
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={advancedConfig.autoCopyUrl}
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                          advancedConfig.autoCopyUrl
-                            ? "bg-primary"
-                            : "bg-input"
-                        }`}
-                        onClick={() =>
-                          updateAdvancedConfig(
-                            "autoCopyUrl",
-                            !advancedConfig.autoCopyUrl
-                          )
-                        }
-                      >
-                        <span
-                          className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${
-                            advancedConfig.autoCopyUrl
-                              ? "translate-x-5"
-                              : "translate-x-0"
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* 图片压缩 */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                    <Label className="text-base font-medium">图片压缩</Label>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>启用图片压缩</Label>
-                        <p className="text-xs text-muted-foreground">
-                          上传前自动压缩图片以减小文件大小
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={advancedConfig.compressImages}
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                          advancedConfig.compressImages
-                            ? "bg-primary"
-                            : "bg-input"
-                        }`}
-                        onClick={() =>
-                          updateAdvancedConfig(
-                            "compressImages",
-                            !advancedConfig.compressImages
-                          )
-                        }
-                      >
-                        <span
-                          className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${
-                            advancedConfig.compressImages
-                              ? "translate-x-5"
-                              : "translate-x-0"
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    {advancedConfig.compressImages && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="compressQuality">
-                            压缩质量
-                          </Label>
-                          <span className="text-sm font-medium">
-                            {advancedConfig.compressQuality}%
-                          </span>
-                        </div>
-                        <input
-                          id="compressQuality"
-                          type="range"
-                          min="1"
-                          max="100"
-                          value={advancedConfig.compressQuality}
-                          onChange={(e) => {
-                            updateAdvancedConfig(
-                              "compressQuality",
-                              parseInt(e.target.value)
-                            );
-                            clearFieldError("compressQuality");
-                          }}
-                          className={`w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer ${
-                            errors.compressQuality
-                              ? "border-destructive"
-                              : ""
-                          }`}
-                        />
-                        {errors.compressQuality && (
-                          <p className="text-sm text-destructive flex items-center gap-1">
-                            <AlertTriangle className="h-3 w-3" />
-                            {errors.compressQuality}
-                          </p>
-                        )}
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>高质量 (大文件)</span>
-                          <span>低质量 (小文件)</span>
-                        </div>
-                      </div>
+                    />
+                    {errors.retryCount && (
+                      <FieldError message={errors.retryCount} />
                     )}
                   </div>
-                </div>
-              </CardContent>
+                </SettingRow>
+
+                <SettingRow
+                  title="重试延迟 (毫秒)"
+                  description="每次重试之间的等待时间"
+                  htmlFor="retryDelay"
+                >
+                  <div className="w-[120px]">
+                    <Input
+                      id="retryDelay"
+                      type="number"
+                      min="0"
+                      max="60000"
+                      step="100"
+                      value={advancedConfig.retryDelay}
+                      onChange={(e) => {
+                        updateAdvancedConfig(
+                          "retryDelay",
+                          parseInt(e.target.value) || 0
+                        );
+                        clearFieldError("retryDelay");
+                      }}
+                      className={cn(
+                        "tabular-nums",
+                        errors.retryDelay && "border-destructive"
+                      )}
+                    />
+                    {errors.retryDelay && (
+                      <FieldError message={errors.retryDelay} />
+                    )}
+                  </div>
+                </SettingRow>
+
+                <SettingRow
+                  title="自动复制 URL"
+                  description="上传完成后自动将图片 URL 复制到剪贴板"
+                >
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={advancedConfig.autoCopyUrl}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                      advancedConfig.autoCopyUrl ? "bg-primary" : "bg-input"
+                    }`}
+                    onClick={() =>
+                      updateAdvancedConfig(
+                        "autoCopyUrl",
+                        !advancedConfig.autoCopyUrl
+                      )
+                    }
+                  >
+                    <span
+                      className={`pointer-events-none block h-5 w-5 rounded-full bg-card shadow-card ring-0 transition-transform ${
+                        advancedConfig.autoCopyUrl
+                          ? "translate-x-5"
+                          : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </SettingRow>
+
+                <SettingRow
+                  title="启用图片压缩"
+                  description="上传前自动压缩图片以减小文件大小"
+                >
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={advancedConfig.compressImages}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                      advancedConfig.compressImages ? "bg-primary" : "bg-input"
+                    }`}
+                    onClick={() =>
+                      updateAdvancedConfig(
+                        "compressImages",
+                        !advancedConfig.compressImages
+                      )
+                    }
+                  >
+                    <span
+                      className={`pointer-events-none block h-5 w-5 rounded-full bg-card shadow-card ring-0 transition-transform ${
+                        advancedConfig.compressImages
+                          ? "translate-x-5"
+                          : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </SettingRow>
+
+                {advancedConfig.compressImages && (
+                  <div className="border-b border-border/60 px-5 py-3.5 last:border-b-0">
+                    <div className="flex items-center justify-between gap-4">
+                      <Label htmlFor="compressQuality">压缩质量</Label>
+                      <span className="text-[14px] font-medium tabular-nums">
+                        {advancedConfig.compressQuality}%
+                      </span>
+                    </div>
+                    <input
+                      id="compressQuality"
+                      type="range"
+                      min="1"
+                      max="100"
+                      value={advancedConfig.compressQuality}
+                      onChange={(e) => {
+                        updateAdvancedConfig(
+                          "compressQuality",
+                          parseInt(e.target.value)
+                        );
+                        clearFieldError("compressQuality");
+                      }}
+                      className={cn(
+                        "mt-3 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-secondary accent-primary",
+                        errors.compressQuality && "ring-1 ring-destructive"
+                      )}
+                    />
+                    {errors.compressQuality && (
+                      <FieldError message={errors.compressQuality} />
+                    )}
+                    <div className="mt-1.5 flex justify-between text-[12px] text-muted-foreground">
+                      <span>高质量 (大文件)</span>
+                      <span>低质量 (小文件)</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </Card>
           </div>
         </TabsContent>
 
         {/* 关于 */}
-        <TabsContent value="about">
-          <div className="space-y-6">
+        <TabsContent value="about" className="mt-5">
+          <div className="space-y-5">
             {/* 应用信息 */}
-            <Card>
-              <CardHeader>
-                <CardTitle>应用信息</CardTitle>
-                <CardDescription>Lsky Studio 版本和系统信息</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
+            <Card className="overflow-hidden">
+              <GroupHeader
+                title="应用信息"
+                description="Lsky Studio 版本和系统信息"
+              />
+              <div>
+                <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3.5 last:border-b-0">
                   <div className="flex items-center gap-2">
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">应用版本</span>
+                    <Info className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                    <span className="text-[14px] font-medium">应用版本</span>
                   </div>
-                  <Badge variant="outline">{appVersion || "加载中..."}</Badge>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Cpu className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">{isWebMode ? "运行环境" : "Node.js 版本"}</span>
-                  </div>
-                  <Badge variant="outline">
-                    {nodeVersion || "加载中..."}
+                  <Badge variant="outline" className="tabular-nums">
+                    {appVersion || "加载中..."}
                   </Badge>
                 </div>
-                {isWebMode && (
-                  <>
-                    <Separator />
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Monitor className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">运行模式</span>
-                      </div>
-                      <Badge variant="secondary">Web 浏览器模式</Badge>
-                    </div>
-                  </>
-                )}
-                <Separator />
-                <div className="flex items-center justify-between">
+
+                <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3.5 last:border-b-0">
                   <div className="flex items-center gap-2">
-                    <Globe className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">运行平台</span>
+                    <Cpu className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                    <span className="text-[14px] font-medium">
+                      {isWebMode() ? "运行环境" : "Node.js 版本"}
+                    </span>
                   </div>
-                  <span className="text-sm text-muted-foreground">
+                  <Badge variant="outline">{nodeVersion || "加载中..."}</Badge>
+                </div>
+
+                {isWebMode() && (
+                  <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3.5 last:border-b-0">
+                    <div className="flex items-center gap-2">
+                      <Monitor className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                      <span className="text-[14px] font-medium">运行模式</span>
+                    </div>
+                    <Badge variant="secondary">Web 浏览器模式</Badge>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3.5 last:border-b-0">
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                    <span className="text-[14px] font-medium">运行平台</span>
+                  </div>
+                  <span className="text-[14px] text-muted-foreground">
                     {navigator.platform}
                   </span>
                 </div>
-                <Separator />
-                <div className="flex items-center justify-between">
+
+                <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3.5 last:border-b-0">
                   <div className="flex items-center gap-2">
-                    <Monitor className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">用户代理</span>
+                    <Monitor className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                    <span className="text-[14px] font-medium">用户代理</span>
                   </div>
-                  <span className="text-sm text-muted-foreground max-w-[300px] truncate">
+                  <span className="max-w-[320px] truncate text-[14px] text-muted-foreground">
                     {navigator.userAgent}
                   </span>
                 </div>
-              </CardContent>
+              </div>
             </Card>
 
             {/* Node.js 服务状态（仅 Tauri 模式） */}
-            {!isWebMode && <Card>
-              <CardHeader>
-                <CardTitle>服务状态</CardTitle>
-                <CardDescription>Node.js 后端服务运行状态</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">服务状态</span>
-                  <Badge variant={isReady ? "success" : "destructive"}>
-                    {isReady ? "运行中" : "未连接"}
-                  </Badge>
+            {!isWebMode() && (
+              <Card className="overflow-hidden">
+                <GroupHeader
+                  title="服务状态"
+                  description="Node.js 后端服务运行状态"
+                />
+                <div>
+                  <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3.5 last:border-b-0">
+                    <span className="text-[14px] font-medium">服务状态</span>
+                    <StatusIndicator
+                      status={isReady ? "online" : "offline"}
+                      label={isReady ? "运行中" : "未连接"}
+                    />
+                  </div>
+
+                  {status && (
+                    <>
+                      <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3.5 last:border-b-0">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                          <span className="text-[14px] font-medium">运行时间</span>
+                        </div>
+                        <span className="text-[14px] tabular-nums text-muted-foreground">
+                          {formatUptime(status.uptime)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3.5 last:border-b-0">
+                        <div className="flex items-center gap-2">
+                          <HardDrive className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                          <span className="text-[14px] font-medium">内存使用</span>
+                        </div>
+                        <span className="text-[14px] tabular-nums text-muted-foreground">
+                          {formatMemory(status.memory.heapUsed)} /{" "}
+                          {formatMemory(status.memory.heapTotal)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3.5 last:border-b-0">
+                        <div className="flex items-center gap-2">
+                          <Activity className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                          <span className="text-[14px] font-medium">任务数量</span>
+                        </div>
+                        <span className="text-[14px] tabular-nums text-muted-foreground">
+                          {status.tasks}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
-                {status && (
-                  <>
-                    <Separator />
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">运行时间</span>
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {formatUptime(status.uptime)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <HardDrive className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">内存使用</span>
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {formatMemory(status.memory.heapUsed)} /{" "}
-                        {formatMemory(status.memory.heapTotal)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Activity className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">任务数量</span>
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {status.tasks}
-                      </span>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>}
+              </Card>
+            )}
 
             {/* 关于应用 */}
-            <Card>
-              <CardHeader>
-                <CardTitle>关于 Lsky Studio</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center space-y-4">
-                  <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <ImageIcon className="h-8 w-8 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold">Lsky Studio</h3>
-                    <p className="text-sm text-muted-foreground">
-                      兰空图床桌面客户端
-                    </p>
-                  </div>
-                  <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                    Lsky Studio 是兰空图床客户端，
-                    支持批量上传、拖拽上传、图片压缩等功能。
-                    {isWebMode ? " 当前运行在浏览器模式下。" : ""}
-                  </p>
+            <Card className="overflow-hidden">
+              <div className="flex flex-col items-center px-6 py-8 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary">
+                  <ImageIcon className="h-8 w-8 text-primary" strokeWidth={1.5} />
                 </div>
-              </CardContent>
+                <h3 className="mt-4 text-section">Lsky Studio</h3>
+                <p className="mt-1 text-[12px] text-muted-foreground">
+                  兰空图床桌面客户端
+                </p>
+                <p className="mt-3 max-w-md text-[12px] leading-[1.5] text-muted-foreground">
+                  Lsky Studio 是兰空图床客户端，
+                  支持批量上传、拖拽上传、图片压缩等功能。
+                  {isWebMode() ? " 当前运行在浏览器模式下。" : ""}
+                </p>
+              </div>
             </Card>
           </div>
         </TabsContent>

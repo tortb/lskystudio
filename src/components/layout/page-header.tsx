@@ -38,17 +38,17 @@ export function PageHeader({
   className,
 }: PageHeaderProps) {
   return (
-    <div className={cn("mb-6 space-y-2", className)}>
+    <div className={cn("mb-7 space-y-3", className)}>
       {/* Breadcrumbs */}
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-muted-foreground">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-[14px] text-muted-foreground">
           {breadcrumbs.map((crumb, index) => {
             const isLast = index === breadcrumbs.length - 1;
 
             return (
               <span key={index} className="flex items-center gap-1">
                 {index > 0 && (
-                  <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
                 )}
 
                 {crumb.href && !isLast ? (
@@ -71,12 +71,12 @@ export function PageHeader({
 
       {/* Title row */}
       <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+        <div className="space-y-1.5">
+          <h1 className="text-title text-foreground">
             {title}
           </h1>
           {description && (
-            <p className="text-sm text-muted-foreground">{description}</p>
+            <p className="text-[14px] leading-[1.5] text-muted-foreground">{description}</p>
           )}
         </div>
 

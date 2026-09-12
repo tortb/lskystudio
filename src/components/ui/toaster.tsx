@@ -64,7 +64,7 @@ function Toaster() {
   const { toasts, removeToast } = useToast();
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+    <div className="pointer-events-none fixed bottom-5 right-5 z-[100] flex w-full max-w-[380px] flex-col gap-2">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
       ))}
@@ -73,6 +73,17 @@ function Toaster() {
 }
 
 // Toast Item 组件
+const variantStyles: Record<
+  ToastVariant,
+  { Icon: typeof Info; tone: string }
+> = {
+  default: { Icon: Info, tone: "bg-secondary text-muted-foreground" },
+  info: { Icon: Info, tone: "bg-primary/10 text-primary" },
+  success: { Icon: CheckCircle, tone: "bg-success/12 text-success" },
+  warning: { Icon: AlertCircle, tone: "bg-warning/15 text-warning" },
+  destructive: { Icon: XCircle, tone: "bg-destructive/12 text-destructive" },
+};
+
 function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -80,40 +91,41 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
     setIsVisible(true);
   }, []);
 
-  const variantClasses = {
-    default: "bg-background border",
-    success: "bg-success text-success-foreground",
-    destructive: "bg-destructive text-destructive-foreground",
-    warning: "bg-warning text-warning-foreground",
-    info: "bg-primary text-primary-foreground",
-  };
-
-  const variantIcons = {
-    default: null,
-    success: <CheckCircle className="h-4 w-4" />,
-    destructive: <XCircle className="h-4 w-4" />,
-    warning: <AlertCircle className="h-4 w-4" />,
-    info: <Info className="h-4 w-4" />,
-  };
+  const { Icon, tone } = variantStyles[toast.variant || "default"];
 
   return (
     <div
       className={cn(
-        "pointer-events-auto relative flex w-full max-w-sm items-start gap-3 overflow-hidden rounded-lg border p-4 shadow-lg transition-all duration-300",
-        variantClasses[toast.variant || "default"],
-        isVisible ? "translate-x-0 opacity-100" : "translate-x-full opacity-0",
+        "pointer-events-auto relative flex w-full items-start gap-3 rounded-xl border border-border/70 bg-popover/95 p-3.5 pr-9 shadow-popover backdrop-blur-xl transition-all duration-300",
+        isVisible ? "translate-x-0 opacity-100" : "translate-x-4 opacity-0",
       )}
     >
-      {variantIcons[toast.variant || "default"]}
-      <div className="flex-1">
-        {toast.title && <p className="text-sm font-medium">{toast.title}</p>}
-        {toast.description && <p className="text-sm opacity-90">{toast.description}</p>}
+      <span
+        className={cn(
+          "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
+          tone,
+        )}
+      >
+        <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        {toast.title && (
+          <p className="text-[14px] font-semibold text-foreground">{toast.title}</p>
+        )}
+        {toast.description && (
+          <p className="mt-0.5 text-[12px] leading-[1.45] text-muted-foreground">
+            {toast.description}
+          </p>
+        )}
       </div>
+
       <button
         onClick={onClose}
-        className="absolute right-2 top-2 rounded-md p-1 opacity-70 hover:opacity-100"
+        aria-label="关闭提示"
+        className="absolute right-2.5 top-2.5 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
       >
-        <X className="h-4 w-4" />
+        <X className="h-3.5 w-3.5" />
       </button>
     </div>
   );

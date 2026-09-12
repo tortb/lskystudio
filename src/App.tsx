@@ -6,19 +6,13 @@ import { ToastProvider } from "./components/ui/toaster";
 import { LoadingSpinner } from "./components/ui/loading-spinner";
 import { Button } from "./components/ui/button";
 import { useSystem } from "./hooks/use-system";
+import { isWebMode } from "./lib/api";
 import DashboardPage from "./features/dashboard";
 import UploadPage from "./features/upload";
 import HistoryPage from "./features/history";
 import PhotoPage from "./features/photos";
 import AlbumPage from "./features/album";
 import SettingsPage from "./features/settings";
-
-// 声明 Tauri 全局变量
-declare global {
-  interface Window {
-    __TAURI__?: Record<string, unknown>;
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Error Boundary
@@ -63,7 +57,7 @@ class ErrorBoundary extends Component<
           </div>
 
           <div className="space-y-1">
-            <h1 className="text-xl font-semibold text-foreground">
+            <h1 className="text-[17px] font-semibold text-foreground">
               应用发生了错误
             </h1>
             <p className="max-w-md text-sm text-muted-foreground">
@@ -95,33 +89,13 @@ class ErrorBoundary extends Component<
 function AppContent() {
   const { isReady, error: nodeError } = useSystem();
 
-  // 检测是否在 Tauri 环境中
-  const isTauri = window.__TAURI__ !== undefined;
-
-  // 在浏览器模式下，跳过后端检查
-  if (!isTauri) {
-    return (
-      <AppLayout>
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/upload" element={<UploadPage />} />
-          <Route path="/history" element={<HistoryPage />} />
-          <Route path="/photos" element={<PhotoPage />} />
-          <Route path="/albums" element={<AlbumPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Routes>
-      </AppLayout>
-    );
-  }
-
-  // Show a full-screen loading state while the Node.js backend is starting up.
-  // Once the "node_ready" event fires, isReady flips to true and we render
-  // the actual application routes.
-  if (!isReady) {
+  // 仅在 Node 后端已接管上传链路时才等待其就绪；
+  // 后端未就绪时由前端内置上传引擎接管，界面立即可用。
+  if (!isWebMode() && !isReady) {
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-4 bg-background">
         <LoadingSpinner size="lg" />
-        <p className="text-sm text-muted-foreground animate-in fade-in duration-300">
+        <p className="text-[14px] text-muted-foreground animate-in fade-in duration-300">
           {nodeError
             ? `后端启动失败: ${nodeError}`
             : "正在启动后端服务，请稍候..."}

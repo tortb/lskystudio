@@ -12,20 +12,23 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToastActions } from "@/components/ui/toaster";
-import { ConfirmDialog } from "@/components/ui/dialog";
+import {
+  ConfirmDialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { PageHeader } from "@/components/layout/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useConfig } from "@/hooks/use-config";
-import { formatDate } from "@/lib/utils";
+import { formatDate, cn } from "@/lib/utils";
 
 interface Album {
   id: string;
@@ -286,82 +289,83 @@ export default function AlbumPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">相册管理</h2>
-          <p className="text-muted-foreground">管理兰空图床相册</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchAlbums} disabled={isLoading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-            刷新
-          </Button>
-          <Button onClick={() => setShowCreateDialog(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            创建相册
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="相册管理"
+        description="管理兰空图床相册"
+        actions={
+          <>
+            <Button variant="outline" onClick={fetchAlbums} disabled={isLoading}>
+              <RefreshCw
+                className={cn("h-4 w-4", isLoading && "animate-spin")}
+                strokeWidth={1.75}
+              />
+              刷新
+            </Button>
+            <Button onClick={() => setShowCreateDialog(true)}>
+              <Plus className="h-4 w-4" strokeWidth={1.75} />
+              创建相册
+            </Button>
+          </>
+        }
+      />
 
       {/* 加载中 */}
       {isConfigLoading ? (
         <Card>
-          <CardContent className="p-12">
-            <div className="flex flex-col items-center justify-center">
-              <Loader2 className="mb-4 h-12 w-12 text-muted-foreground animate-spin" />
-              <p className="text-sm text-muted-foreground">加载配置中...</p>
-            </div>
+          <CardContent className="flex flex-col items-center justify-center px-6 py-16">
+            <Loader2
+              className="mb-3 h-6 w-6 animate-spin text-muted-foreground"
+              strokeWidth={1.75}
+            />
+            <p className="text-[14px] text-muted-foreground">加载配置中...</p>
           </CardContent>
         </Card>
       ) : /* 未配置提示 */
       !config?.apiUrl || !config?.apiToken ? (
         <Card>
-          <CardContent className="p-12">
-            <div className="flex flex-col items-center justify-center">
-              <FolderOpen className="mb-4 h-12 w-12 text-muted-foreground" />
-              <h3 className="mb-2 text-lg font-medium">请先配置 API</h3>
-              <p className="mb-4 text-sm text-muted-foreground">
-                在设置页面配置 API 地址和 Token 后即可管理相册
-              </p>
-              <Button onClick={() => (window.location.href = "/settings")}>
-                前往设置
-              </Button>
-            </div>
-          </CardContent>
+          <EmptyState
+            icon={FolderOpen}
+            title="请先配置 API"
+            description="在设置页面配置 API 地址和 Token 后即可管理相册"
+            action={{
+              label: "前往设置",
+              onClick: () => (window.location.href = "/settings"),
+            }}
+          />
         </Card>
       ) : isLoading ? (
         <Card>
-          <CardContent className="p-12">
-            <div className="flex flex-col items-center justify-center">
-              <Loader2 className="mb-4 h-12 w-12 text-muted-foreground animate-spin" />
-              <p className="text-sm text-muted-foreground">加载中...</p>
-            </div>
+          <CardContent className="flex flex-col items-center justify-center px-6 py-16">
+            <Loader2
+              className="mb-3 h-6 w-6 animate-spin text-muted-foreground"
+              strokeWidth={1.75}
+            />
+            <p className="text-[14px] text-muted-foreground">加载中...</p>
           </CardContent>
         </Card>
       ) : albums.length === 0 ? (
         <Card>
-          <CardContent className="p-12">
-            <div className="flex flex-col items-center justify-center">
-              <FolderOpen className="mb-4 h-12 w-12 text-muted-foreground" />
-              <h3 className="mb-2 text-lg font-medium">暂无相册</h3>
-              <p className="mb-4 text-sm text-muted-foreground">
-                创建相册来组织你的图片
-              </p>
-              <Button onClick={() => setShowCreateDialog(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                创建相册
-              </Button>
-            </div>
-          </CardContent>
+          <EmptyState
+            icon={FolderOpen}
+            title="暂无相册"
+            description="创建相册来组织你的图片"
+            action={{
+              label: "创建相册",
+              icon: Plus,
+              onClick: () => setShowCreateDialog(true),
+            }}
+          />
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {albums.map((album) => (
-            <Card key={album.id} className="overflow-hidden">
+            <div
+              key={album.id}
+              className="group overflow-hidden rounded-lg border border-border/70 bg-card transition-colors hover:border-border"
+            >
               {/* 封面图 */}
-              <div className="aspect-video bg-muted">
+              <div className="relative aspect-[4/3] bg-secondary">
                 {album.covers && album.covers.length > 0 ? (
                   <img
                     src={album.covers[0]}
@@ -370,17 +374,49 @@ export default function AlbumPage() {
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center">
-                    <Image className="h-12 w-12 text-muted-foreground" />
+                    <Image
+                      className="h-8 w-8 text-muted-foreground"
+                      strokeWidth={1.5}
+                    />
                   </div>
                 )}
+
+                {/* hover 渐变遮罩 */}
+                <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+
+                {/* hover 操作按钮 */}
+                <div className="absolute right-2 top-2 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+                  <Button
+                    variant="secondary"
+                    size="icon-sm"
+                    aria-label="重命名"
+                    onClick={() => handleEditAlbum(album)}
+                  >
+                    <Edit className="h-4 w-4" strokeWidth={1.75} />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon-sm"
+                    aria-label="删除"
+                    onClick={() => {
+                      setSelectedAlbum(album);
+                      setShowDeleteDialog(true);
+                    }}
+                  >
+                    <Trash2
+                      className="h-4 w-4 text-destructive"
+                      strokeWidth={1.75}
+                    />
+                  </Button>
+                </div>
               </div>
 
               {/* 内容 */}
-              <CardContent className="p-4">
+              <div className="p-4">
                 {editingAlbum?.id === album.id ? (
                   // 编辑模式
                   <div className="space-y-3">
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       <Label htmlFor={`edit-name-${album.id}`}>名称</Label>
                       <Input
                         id={`edit-name-${album.id}`}
@@ -388,7 +424,7 @@ export default function AlbumPage() {
                         onChange={(e) => setEditName(e.target.value)}
                       />
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       <Label htmlFor={`edit-desc-${album.id}`}>描述</Label>
                       <Input
                         id={`edit-desc-${album.id}`}
@@ -398,11 +434,15 @@ export default function AlbumPage() {
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" onClick={handleSaveEdit}>
-                        <Check className="mr-1 h-3 w-3" />
+                        <Check className="h-4 w-4" strokeWidth={1.75} />
                         保存
                       </Button>
-                      <Button size="sm" variant="outline" onClick={handleCancelEdit}>
-                        <X className="mr-1 h-3 w-3" />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCancelEdit}
+                      >
+                        <X className="h-4 w-4" strokeWidth={1.75} />
                         取消
                       </Button>
                     </div>
@@ -410,86 +450,65 @@ export default function AlbumPage() {
                 ) : (
                   // 显示模式
                   <>
-                    <div className="mb-2 flex items-start justify-between">
-                      <div>
-                        <h3 className="font-medium">{album.name}</h3>
-                        {album.description && (
-                          <p className="text-sm text-muted-foreground">
-                            {album.description}
-                          </p>
-                        )}
-                      </div>
-                      <Badge variant="outline">{album.imageCount} 张</Badge>
-                    </div>
-
-                    <p className="mb-3 text-xs text-muted-foreground">
-                      创建于 {formatDate(album.createdAt)}
-                    </p>
-
-                    {/* 标签 */}
-                    {album.tags && album.tags.length > 0 && (
-                      <div className="mb-2 flex flex-wrap gap-1">
-                        {album.tags.map((tag, i) => (
-                          <Badge key={i} variant="secondary" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* 公开状态 */}
-                    <div className="mb-2">
-                      <Badge variant={album.isPublic ? "default" : "outline"} className="text-xs">
-                        {album.isPublic ? "公开" : "私密"}
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="min-w-0 truncate text-[14px] font-medium">
+                        {album.name}
+                      </h3>
+                      <Badge variant="outline" className="shrink-0 tabular-nums">
+                        {album.imageCount} 张
                       </Badge>
                     </div>
 
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => handleUploadToAlbum(album)}
-                      >
-                        <Upload className="mr-1 h-3 w-3" />
-                        上传
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEditAlbum(album)}
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedAlbum(album);
-                          setShowDeleteDialog(true);
-                        }}
-                      >
-                        <Trash2 className="h-3 w-3 text-destructive" />
-                      </Button>
+                    {album.description && (
+                      <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
+                        {album.description}
+                      </p>
+                    )}
+
+                    <p className="mt-1.5 text-[12px] tabular-nums text-muted-foreground">
+                      创建于 {formatDate(album.createdAt)}
+                    </p>
+
+                    <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                      <Badge variant={album.isPublic ? "default" : "outline"}>
+                        {album.isPublic ? "公开" : "私密"}
+                      </Badge>
+                      {album.tags?.map((tag, i) => (
+                        <Badge key={i} variant="secondary">
+                          {tag}
+                        </Badge>
+                      ))}
                     </div>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-3 w-full"
+                      onClick={() => handleUploadToAlbum(album)}
+                    >
+                      <Upload className="h-4 w-4" strokeWidth={1.75} />
+                      上传
+                    </Button>
                   </>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       )}
 
       {/* 创建相册对话框 */}
       {showCreateDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>创建相册</CardTitle>
-              <CardDescription>创建一个新的相册来组织图片</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-[3px]">
+          <DialogContent className="w-full max-w-md">
+            <DialogHeader>
+              <DialogTitle>创建相册</DialogTitle>
+              <DialogDescription className="text-[14px]">
+                创建一个新的相册来组织图片
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-5 space-y-4">
+              <div className="space-y-1.5">
                 <Label htmlFor="albumName">相册名称 *</Label>
                 <Input
                   id="albumName"
@@ -498,7 +517,7 @@ export default function AlbumPage() {
                   onChange={(e) => setNewAlbumName(e.target.value)}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="albumDescription">描述（可选）</Label>
                 <Input
                   id="albumDescription"
@@ -507,27 +526,27 @@ export default function AlbumPage() {
                   onChange={(e) => setNewAlbumDescription(e.target.value)}
                 />
               </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowCreateDialog(false)}
-                  disabled={isCreating}
-                >
-                  取消
-                </Button>
-                <Button onClick={handleCreateAlbum} disabled={isCreating}>
-                  {isCreating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      创建中...
-                    </>
-                  ) : (
-                    "创建"
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateDialog(false)}
+                disabled={isCreating}
+              >
+                取消
+              </Button>
+              <Button onClick={handleCreateAlbum} disabled={isCreating}>
+                {isCreating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+                    创建中...
+                  </>
+                ) : (
+                  "创建"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
         </div>
       )}
 

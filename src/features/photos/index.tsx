@@ -10,7 +10,6 @@ import {
   ChevronRight,
   Image,
   Loader2,
-  X,
   LayoutGrid,
   List,
   Info,
@@ -20,23 +19,29 @@ import {
   CheckSquare,
   Square,
   MinusSquare,
+  Check,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+  ConfirmDialog,
+} from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/layout/page-header";
 import { useToastActions } from "@/components/ui/toaster";
-import { ConfirmDialog } from "@/components/ui/dialog";
 import { useConfig } from "@/hooks/use-config";
-import { formatFileSize, formatDate, useDebounce } from "@/lib/utils";
+import { formatFileSize, formatDate, useDebounce, cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -459,11 +464,9 @@ export default function PhotoPage() {
   if (isConfigLoading) {
     return (
       <Card>
-        <CardContent className="p-12">
-          <div className="flex flex-col items-center justify-center">
-            <Loader2 className="mb-4 h-12 w-12 text-muted-foreground animate-spin" />
-            <p className="text-sm text-muted-foreground">加载配置中...</p>
-          </div>
+        <CardContent className="flex flex-col items-center justify-center px-6 py-16">
+          <Loader2 className="mb-3 h-6 w-6 animate-spin text-muted-foreground" strokeWidth={1.75} />
+          <p className="text-[14px] text-muted-foreground">加载配置中…</p>
         </CardContent>
       </Card>
     );
@@ -472,97 +475,103 @@ export default function PhotoPage() {
   // 未配置提示
   if (!config?.apiUrl || !config?.apiToken) {
     return (
-      <Card>
-        <CardContent className="p-12">
-          <div className="flex flex-col items-center justify-center">
-            <Image className="mb-4 h-12 w-12 text-muted-foreground" />
-            <h3 className="mb-2 text-lg font-medium">请先配置 API</h3>
-            <p className="mb-4 text-sm text-muted-foreground">
-              在设置页面配置 API 地址和 Token 后即可管理图片
-            </p>
-            <Button onClick={() => (window.location.href = "/settings")}>
-              前往设置
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-5">
+        <PageHeader title="图片" description="管理兰空图库中的图片" />
+        <Card>
+          <EmptyState
+            icon={Image}
+            title="请先配置 API"
+            description="在设置页面配置 API 地址和 Token 后即可管理图片"
+            action={{
+              label: "前往设置",
+              onClick: () => {
+                window.location.href = "/settings";
+              },
+            }}
+          />
+        </Card>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">图片管理</h2>
-          <p className="text-muted-foreground">管理兰空图库中的图片</p>
-        </div>
-        <div className="flex gap-2">
-          {/* 视图切换 */}
-          <div className="flex rounded-md border">
-            <Button
-              variant={viewMode === "list" ? "default" : "ghost"}
-              size="sm"
-              className="rounded-r-none"
-              onClick={() => setViewMode("list")}
-            >
-              <List className="h-4 w-4" />
+    <div className="space-y-5">
+      <PageHeader
+        title="图片"
+        description="管理兰空图库中的图片"
+        actions={
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
+              <Button
+                variant={viewMode === "list" ? "secondary" : "ghost"}
+                size="icon-sm"
+                onClick={() => setViewMode("list")}
+                aria-label="列表视图"
+              >
+                <List className="h-4 w-4" strokeWidth={1.75} />
+              </Button>
+              <Button
+                variant={viewMode === "grid" ? "secondary" : "ghost"}
+                size="icon-sm"
+                onClick={() => setViewMode("grid")}
+                aria-label="网格视图"
+              >
+                <LayoutGrid className="h-4 w-4" strokeWidth={1.75} />
+              </Button>
+            </div>
+            <Button variant="outline" size="sm" onClick={fetchPhotos} disabled={isLoading}>
+              <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} strokeWidth={1.75} />
+              刷新
             </Button>
-            <Button
-              variant={viewMode === "grid" ? "default" : "ghost"}
-              size="sm"
-              className="rounded-l-none"
-              onClick={() => setViewMode("grid")}
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
+            {selectedIds.size > 0 && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setShowBatchEditDialog(true)}>
+                  <Edit className="h-4 w-4" strokeWidth={1.75} />
+                  批量编辑 ({selectedIds.size})
+                </Button>
+                <Button variant="destructive" size="sm" onClick={() => setShowDeleteDialog(true)}>
+                  <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+                  批量删除 ({selectedIds.size})
+                </Button>
+              </>
+            )}
           </div>
-          <Button variant="outline" onClick={fetchPhotos} disabled={isLoading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-            刷新
-          </Button>
-          {selectedIds.size > 0 && (
-            <>
-              <Button variant="outline" onClick={() => setShowBatchEditDialog(true)}>
-                <Edit className="mr-2 h-4 w-4" />
-                批量编辑 ({selectedIds.size})
-              </Button>
-              <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                批量删除 ({selectedIds.size})
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
+        }
+      />
 
-      {/* 统计卡片 */}
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* 统计 */}
+      <div className="grid gap-3 md:grid-cols-3">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">总图片数</CardTitle>
-            <Image className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalCount}</div>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] text-muted-foreground">总图片数</span>
+              <Image className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+            </div>
+            <div className="mt-2 text-[17px] font-semibold leading-none tabular-nums tracking-[-0.01em]">
+              {totalCount}
+            </div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">公开图片</CardTitle>
-            <Globe className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">{publicCount}</div>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] text-muted-foreground">公开图片</span>
+              <Globe className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+            </div>
+            <div className="mt-2 text-[17px] font-semibold leading-none tabular-nums tracking-[-0.01em] text-success">
+              {publicCount}
+            </div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">私密图片</CardTitle>
-            <Lock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-muted-foreground">{privateCount}</div>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] text-muted-foreground">私密图片</span>
+              <Lock className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+            </div>
+            <div className="mt-2 text-[17px] font-semibold leading-none tabular-nums tracking-[-0.01em] text-muted-foreground">
+              {privateCount}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -570,9 +579,9 @@ export default function PhotoPage() {
       {/* 搜索和筛选 */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" strokeWidth={1.75} />
               <Input
                 placeholder="搜索文件名..."
                 value={searchInput}
@@ -580,35 +589,30 @@ export default function PhotoPage() {
                 className="pl-9"
               />
             </div>
-            <div className="flex flex-wrap gap-2">
-              {/* 公开状态筛选 */}
-              <div className="flex rounded-md border">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
                 <Button
-                  variant={publicFilter === "all" ? "default" : "ghost"}
+                  variant={publicFilter === "all" ? "secondary" : "ghost"}
                   size="sm"
-                  className="rounded-r-none"
                   onClick={() => setPublicFilter("all")}
                 >
                   全部
                 </Button>
                 <Button
-                  variant={publicFilter === "public" ? "default" : "ghost"}
+                  variant={publicFilter === "public" ? "secondary" : "ghost"}
                   size="sm"
-                  className="rounded-none"
                   onClick={() => setPublicFilter("public")}
                 >
                   公开
                 </Button>
                 <Button
-                  variant={publicFilter === "private" ? "default" : "ghost"}
+                  variant={publicFilter === "private" ? "secondary" : "ghost"}
                   size="sm"
-                  className="rounded-l-none"
                   onClick={() => setPublicFilter("private")}
                 >
                   私密
                 </Button>
               </div>
-              {/* 排序 */}
               <Select
                 options={[
                   { value: "latest", label: "最新" },
@@ -616,6 +620,7 @@ export default function PhotoPage() {
                 ]}
                 value={orderBy}
                 onChange={(e) => setOrderBy(e.target.value as "latest" | "oldest")}
+                className="w-28"
               />
             </div>
           </div>
@@ -625,342 +630,346 @@ export default function PhotoPage() {
       {/* 内容区 */}
       {isLoading ? (
         <Card>
-          <CardContent className="p-12">
-            <div className="flex flex-col items-center justify-center">
-              <Loader2 className="mb-4 h-12 w-12 text-muted-foreground animate-spin" />
-              <p className="text-sm text-muted-foreground">加载中...</p>
-            </div>
+          <CardContent className="flex flex-col items-center justify-center px-6 py-16">
+            <Loader2 className="mb-3 h-6 w-6 animate-spin text-muted-foreground" strokeWidth={1.75} />
+            <p className="text-[14px] text-muted-foreground">加载中…</p>
           </CardContent>
         </Card>
       ) : photos.length === 0 ? (
         <Card>
-          <CardContent className="p-12">
-            <div className="flex flex-col items-center justify-center">
-              <Image className="mb-4 h-12 w-12 text-muted-foreground" />
-              <h3 className="mb-2 text-lg font-medium">暂无图片</h3>
-              <p className="text-sm text-muted-foreground">
-                {search ? "没有找到匹配的图片" : "上传图片后将在此显示"}
-              </p>
-            </div>
-          </CardContent>
+          <EmptyState
+            icon={Image}
+            title="暂无图片"
+            description={search ? "没有找到匹配的图片" : "上传图片后将在此显示"}
+          />
         </Card>
       ) : viewMode === "list" ? (
         /* ========== 列表视图 ========== */
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>图片列表</CardTitle>
-                <CardDescription>
-                  共 {totalCount} 张图片
-                  {search && ` (搜索: "${search}")`}
-                </CardDescription>
-              </div>
-              <Button variant="ghost" size="sm" onClick={toggleSelectAll}>
-                {selectedIds.size === photos.length ? (
-                  <CheckSquare className="mr-2 h-4 w-4" />
-                ) : selectedIds.size > 0 ? (
-                  <MinusSquare className="mr-2 h-4 w-4" />
-                ) : (
-                  <Square className="mr-2 h-4 w-4" />
-                )}
-                {selectedIds.size === photos.length ? "取消全选" : "全选"}
-              </Button>
+        <Card className="overflow-hidden">
+          <div className="flex items-center justify-between border-b border-border/70 px-5 py-3.5">
+            <div>
+              <h3 className="text-section">图片列表</h3>
+              <p className="mt-0.5 text-[12px] text-muted-foreground">
+                共 {totalCount} 张图片
+                {search && ` (搜索: "${search}")`}
+              </p>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="pb-3 text-left font-medium w-10"></th>
-                    <th className="pb-3 text-left font-medium">缩略图</th>
-                    <th className="pb-3 text-left font-medium">文件名</th>
-                    <th className="pb-3 text-left font-medium">大小</th>
-                    <th className="pb-3 text-left font-medium">尺寸</th>
-                    <th className="pb-3 text-left font-medium">相册</th>
-                    <th className="pb-3 text-left font-medium">标签</th>
-                    <th className="pb-3 text-left font-medium">状态</th>
-                    <th className="pb-3 text-left font-medium">时间</th>
-                    <th className="pb-3 text-left font-medium">操作</th>
+            <Button variant="ghost" size="sm" onClick={toggleSelectAll}>
+              {selectedIds.size === photos.length ? (
+                <CheckSquare className="h-4 w-4" strokeWidth={1.75} />
+              ) : selectedIds.size > 0 ? (
+                <MinusSquare className="h-4 w-4" strokeWidth={1.75} />
+              ) : (
+                <Square className="h-4 w-4" strokeWidth={1.75} />
+              )}
+              {selectedIds.size === photos.length ? "取消全选" : "全选"}
+            </Button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border/60">
+                  <th className="w-10 px-5 py-3 text-left"></th>
+                  <th className="px-3 py-3 text-left text-[12px] font-medium text-muted-foreground">缩略图</th>
+                  <th className="px-3 py-3 text-left text-[12px] font-medium text-muted-foreground">文件名</th>
+                  <th className="px-3 py-3 text-left text-[12px] font-medium text-muted-foreground">大小</th>
+                  <th className="px-3 py-3 text-left text-[12px] font-medium text-muted-foreground">尺寸</th>
+                  <th className="px-3 py-3 text-left text-[12px] font-medium text-muted-foreground">相册</th>
+                  <th className="px-3 py-3 text-left text-[12px] font-medium text-muted-foreground">标签</th>
+                  <th className="px-3 py-3 text-left text-[12px] font-medium text-muted-foreground">状态</th>
+                  <th className="px-3 py-3 text-left text-[12px] font-medium text-muted-foreground">时间</th>
+                  <th className="px-3 py-3 text-left text-[12px] font-medium text-muted-foreground">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {photos.map((photo) => (
+                  <tr
+                    key={photo.id}
+                    className="border-b border-border/60 last:border-b-0 hover:bg-secondary/50"
+                  >
+                    <td className="px-5 py-3">
+                      <button
+                        onClick={() => toggleSelect(photo.id)}
+                        className="text-muted-foreground transition-colors hover:text-foreground"
+                        aria-label={selectedIds.has(photo.id) ? "取消选择" : "选择"}
+                      >
+                        {selectedIds.has(photo.id) ? (
+                          <CheckSquare className="h-4 w-4" strokeWidth={1.75} />
+                        ) : (
+                          <Square className="h-4 w-4" strokeWidth={1.75} />
+                        )}
+                      </button>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div
+                        className="h-10 w-10 cursor-pointer overflow-hidden rounded-sm bg-secondary"
+                        onClick={() => handleViewDetail(photo)}
+                      >
+                        {photo.thumbnail_url ? (
+                          <img
+                            src={photo.thumbnail_url}
+                            alt={photo.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <Image className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <p className="text-[14px] font-medium">{photo.name || photo.filename}</p>
+                      <p className="mt-0.5 text-[12px] text-muted-foreground">{photo.filename}</p>
+                    </td>
+                    <td className="px-3 py-3 text-[14px] tabular-nums text-muted-foreground">
+                      {formatFileSize(photo.md5 ? 0 : 0)}
+                    </td>
+                    <td className="px-3 py-3 text-[14px] tabular-nums text-muted-foreground">
+                      {photo.width} × {photo.height}
+                    </td>
+                    <td className="px-3 py-3">
+                      {photo.albums && photo.albums.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {photo.albums.map((album) => (
+                            <Badge key={album.id} variant="secondary">
+                              {album.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-[12px] text-muted-foreground">-</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3">
+                      {photo.tags && photo.tags.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {photo.tags.slice(0, 3).map((tag) => (
+                            <Badge key={tag.id} variant="outline">
+                              {tag.name}
+                            </Badge>
+                          ))}
+                          {photo.tags.length > 3 && (
+                            <Badge variant="outline">+{photo.tags.length - 3}</Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-[12px] text-muted-foreground">-</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3">
+                      <Badge variant={photo.is_public ? "success" : "outline"}>
+                        {photo.is_public ? "公开" : "私密"}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-3 text-[14px] tabular-nums text-muted-foreground">
+                      {formatDate(photo.created_at)}
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => handleOpenEdit(photo)}
+                          aria-label="编辑"
+                        >
+                          <Edit className="h-4 w-4" strokeWidth={1.75} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => copyUrl(photo.public_url)}
+                          aria-label="复制链接"
+                        >
+                          <Copy className="h-4 w-4" strokeWidth={1.75} />
+                        </Button>
+                        <a
+                          href={photo.public_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }))}
+                          aria-label="打开原图"
+                        >
+                          <ExternalLink className="h-4 w-4" strokeWidth={1.75} />
+                        </a>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {photos.map((photo) => (
-                    <tr key={photo.id} className="border-b hover:bg-muted/50">
-                      <td className="py-3">
-                        <button
-                          onClick={() => toggleSelect(photo.id)}
-                          className="text-muted-foreground hover:text-foreground"
-                        >
-                          {selectedIds.has(photo.id) ? (
-                            <CheckSquare className="h-4 w-4" />
-                          ) : (
-                            <Square className="h-4 w-4" />
-                          )}
-                        </button>
-                      </td>
-                      <td className="py-3">
-                        <div
-                          className="h-10 w-10 overflow-hidden rounded bg-muted cursor-pointer"
-                          onClick={() => handleViewDetail(photo)}
-                        >
-                          {photo.thumbnail_url ? (
-                            <img
-                              src={photo.thumbnail_url}
-                              alt={photo.name}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center">
-                              <Image className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-3">
-                        <div>
-                          <p className="text-sm font-medium">{photo.name || photo.filename}</p>
-                          <p className="text-xs text-muted-foreground">{photo.filename}</p>
-                        </div>
-                      </td>
-                      <td className="py-3 text-sm text-muted-foreground">
-                        {formatFileSize(photo.md5 ? 0 : 0)}
-                      </td>
-                      <td className="py-3 text-sm text-muted-foreground">
-                        {photo.width} × {photo.height}
-                      </td>
-                      <td className="py-3">
-                        {photo.albums && photo.albums.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {photo.albums.map((album) => (
-                              <Badge key={album.id} variant="secondary" className="text-xs">
-                                {album.name}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">-</span>
-                        )}
-                      </td>
-                      <td className="py-3">
-                        {photo.tags && photo.tags.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {photo.tags.slice(0, 3).map((tag) => (
-                              <Badge key={tag.id} variant="outline" className="text-xs">
-                                {tag.name}
-                              </Badge>
-                            ))}
-                            {photo.tags.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{photo.tags.length - 3}
-                              </Badge>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">-</span>
-                        )}
-                      </td>
-                      <td className="py-3">
-                        <Badge variant={photo.is_public ? "success" : "outline"} className="text-xs">
-                          {photo.is_public ? "公开" : "私密"}
-                        </Badge>
-                      </td>
-                      <td className="py-3 text-sm text-muted-foreground">
-                        {formatDate(photo.created_at)}
-                      </td>
-                      <td className="py-3">
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleOpenEdit(photo)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => copyUrl(photo.public_url)}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                            <a href={photo.public_url} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-4 w-4" />
-                            </a>
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-            {/* 分页 */}
-            {totalPages > 1 && (
-              <div className="mt-4 flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  第 {currentPage} 页，共 {totalPages} 页
-                </p>
-                <div className="flex gap-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const page = i + 1;
-                    return (
-                      <Button
-                        key={page}
-                        variant={currentPage === page ? "default" : "outline"}
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setCurrentPage(page)}
-                      >
-                        {page}
-                      </Button>
-                    );
-                  })}
-                  {totalPages > 5 && (
-                    <>
-                      <span className="flex h-8 w-8 items-center justify-center text-sm text-muted-foreground">
-                        ...
-                      </span>
-                      <Button
-                        variant={currentPage === totalPages ? "default" : "outline"}
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setCurrentPage(totalPages)}
-                      >
-                        {totalPages}
-                      </Button>
-                    </>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
+          {/* 分页 */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-border/60 px-5 py-3">
+              <p className="text-[12px] tabular-nums text-muted-foreground">
+                第 {currentPage} 页，共 {totalPages} 页
+              </p>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  aria-label="上一页"
+                >
+                  <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
+                </Button>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const page = i + 1;
+                  return (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="icon-sm"
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </Button>
+                  );
+                })}
+                {totalPages > 5 && (
+                  <>
+                    <span className="flex h-7 w-7 items-center justify-center text-[14px] tabular-nums text-muted-foreground">
+                      …
+                    </span>
+                    <Button
+                      variant={currentPage === totalPages ? "default" : "outline"}
+                      size="icon-sm"
+                      onClick={() => setCurrentPage(totalPages)}
+                    >
+                      {totalPages}
+                    </Button>
+                  </>
+                )}
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  aria-label="下一页"
+                >
+                  <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
+                </Button>
               </div>
-            )}
-          </CardContent>
+            </div>
+          )}
         </Card>
       ) : (
         /* ========== 网格视图 ========== */
         <>
-          {/* 全选控制 */}
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-[14px] tabular-nums text-muted-foreground">
               共 {totalCount} 张图片，已选 {selectedIds.size} 张
             </p>
             <Button variant="ghost" size="sm" onClick={toggleSelectAll}>
               {selectedIds.size === photos.length ? "取消全选" : "全选"}
             </Button>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {photos.map((photo) => (
-              <Card
-                key={photo.id}
-                className={`overflow-hidden cursor-pointer transition-all ${
-                  selectedIds.has(photo.id) ? "ring-2 ring-primary" : ""
-                }`}
-                onClick={() => toggleSelect(photo.id)}
-              >
-                {/* 图片预览 */}
-                <div className="aspect-square bg-muted relative">
-                  {photo.thumbnail_url ? (
-                    <img
-                      src={photo.thumbnail_url}
-                      alt={photo.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center">
-                      <Image className="h-12 w-12 text-muted-foreground" />
-                    </div>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {photos.map((photo) => {
+              const isSelected = selectedIds.has(photo.id);
+              return (
+                <div
+                  key={photo.id}
+                  onClick={() => toggleSelect(photo.id)}
+                  className={cn(
+                    "group relative cursor-pointer overflow-hidden rounded-lg border border-border/70 bg-card transition-colors",
+                    isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background",
                   )}
-                  {/* 选中指示器 */}
-                  <div className="absolute top-2 left-2">
-                    {selectedIds.has(photo.id) ? (
-                      <CheckSquare className="h-5 w-5 text-primary drop-shadow" />
+                >
+                  <div className="relative aspect-square overflow-hidden bg-secondary">
+                    {photo.thumbnail_url ? (
+                      <img
+                        src={photo.thumbnail_url}
+                        alt={photo.name}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                      />
                     ) : (
-                      <Square className="h-5 w-5 text-white drop-shadow" />
+                      <div className="flex h-full items-center justify-center">
+                        <Image className="h-10 w-10 text-muted-foreground" strokeWidth={1.5} />
+                      </div>
+                    )}
+
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+
+                    <div className="absolute left-2 top-2">
+                      <span
+                        className={cn(
+                          "flex h-6 w-6 items-center justify-center rounded-md transition-opacity",
+                          isSelected
+                            ? "bg-primary text-primary-foreground"
+                            : "border border-white/70 bg-black/20 text-transparent opacity-0 backdrop-blur-sm group-hover:opacity-100",
+                        )}
+                      >
+                        <Check className="h-4 w-4" strokeWidth={2.25} />
+                      </span>
+                    </div>
+
+                    <div className="absolute right-2 top-2">
+                      <Badge
+                        variant={photo.is_public ? "success" : "outline"}
+                        className={cn(
+                          !photo.is_public && "border-transparent bg-black/30 text-white backdrop-blur-sm",
+                        )}
+                      >
+                        {photo.is_public ? "公开" : "私密"}
+                      </Badge>
+                    </div>
+
+                    <div
+                      className="absolute inset-x-2 bottom-2 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Button
+                        variant="secondary"
+                        size="icon-sm"
+                        onClick={() => handleOpenEdit(photo)}
+                        aria-label="编辑"
+                      >
+                        <Edit className="h-4 w-4" strokeWidth={1.75} />
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="icon-sm"
+                        onClick={() => handleViewDetail(photo)}
+                        aria-label="查看详情"
+                      >
+                        <Info className="h-4 w-4" strokeWidth={1.75} />
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="icon-sm"
+                        onClick={() => copyUrl(photo.public_url)}
+                        aria-label="复制链接"
+                      >
+                        <Copy className="h-4 w-4" strokeWidth={1.75} />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="p-3">
+                    <p className="truncate text-[14px] font-medium">{photo.name || photo.filename}</p>
+                    <p className="mt-0.5 text-[12px] tabular-nums text-muted-foreground">
+                      {photo.width} × {photo.height} · {formatDate(photo.created_at)}
+                    </p>
+                    {photo.tags && photo.tags.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {photo.tags.slice(0, 2).map((tag) => (
+                          <Badge key={tag.id} variant="secondary">
+                            {tag.name}
+                          </Badge>
+                        ))}
+                        {photo.tags.length > 2 && (
+                          <Badge variant="secondary">+{photo.tags.length - 2}</Badge>
+                        )}
+                      </div>
                     )}
                   </div>
-                  {/* 公开状态 */}
-                  <div className="absolute top-2 right-2">
-                    <Badge variant={photo.is_public ? "success" : "outline"} className="text-xs">
-                      {photo.is_public ? "公开" : "私密"}
-                    </Badge>
-                  </div>
                 </div>
-
-                {/* 信息 */}
-                <CardContent className="p-3">
-                  <p className="text-sm font-medium truncate">{photo.name || photo.filename}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {photo.width} × {photo.height} · {formatDate(photo.created_at)}
-                  </p>
-                  {/* 标签 */}
-                  {photo.tags && photo.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {photo.tags.slice(0, 2).map((tag) => (
-                        <Badge key={tag.id} variant="secondary" className="text-xs">
-                          {tag.name}
-                        </Badge>
-                      ))}
-                      {photo.tags.length > 2 && (
-                        <Badge variant="secondary" className="text-xs">
-                          +{photo.tags.length - 2}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                  {/* 操作按钮 */}
-                  <div className="flex gap-1 mt-2" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="flex-1 h-8"
-                      onClick={() => handleOpenEdit(photo)}
-                    >
-                      <Edit className="mr-1 h-3 w-3" />
-                      编辑
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8"
-                      onClick={() => handleViewDetail(photo)}
-                    >
-                      <Info className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8"
-                      onClick={() => copyUrl(photo.public_url)}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+              );
+            })}
           </div>
 
           {/* 网格视图分页 */}
@@ -968,24 +977,24 @@ export default function PhotoPage() {
             <div className="flex items-center justify-center gap-2">
               <Button
                 variant="outline"
-                size="icon"
-                className="h-8 w-8"
+                size="icon-sm"
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
+                aria-label="上一页"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
               </Button>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-[14px] tabular-nums text-muted-foreground">
                 第 {currentPage} / {totalPages} 页
               </span>
               <Button
                 variant="outline"
-                size="icon"
-                className="h-8 w-8"
+                size="icon-sm"
                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
+                aria-label="下一页"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
               </Button>
             </div>
           )}
@@ -994,29 +1003,21 @@ export default function PhotoPage() {
 
       {/* ========== 编辑对话框 ========== */}
       {showEditDialog && editingPhoto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>编辑图片信息</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowEditDialog(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <CardDescription>{editingPhoto.filename}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* 预览 */}
+        <Dialog open onOpenChange={setShowEditDialog}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogClose onClick={() => setShowEditDialog(false)} />
+            <DialogHeader>
+              <DialogTitle>编辑图片信息</DialogTitle>
+              <DialogDescription>{editingPhoto.filename}</DialogDescription>
+            </DialogHeader>
+
+            <div className="mt-5 space-y-4">
               {editingPhoto.thumbnail_url && (
-                <div className="flex justify-center">
+                <div className="flex justify-center overflow-hidden rounded-lg bg-secondary p-2">
                   <img
                     src={editingPhoto.thumbnail_url}
                     alt={editingPhoto.name}
-                    className="max-h-48 rounded-lg object-contain"
+                    className="max-h-40 rounded-md object-contain"
                   />
                 </div>
               )}
@@ -1041,7 +1042,7 @@ export default function PhotoPage() {
                 />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <Label>公开状态</Label>
                 <Button
                   variant={editForm.is_public ? "default" : "outline"}
@@ -1052,12 +1053,12 @@ export default function PhotoPage() {
                 >
                   {editForm.is_public ? (
                     <>
-                      <Globe className="mr-1 h-3 w-3" />
+                      <Globe className="h-4 w-4" strokeWidth={1.75} />
                       公开
                     </>
                   ) : (
                     <>
-                      <Lock className="mr-1 h-3 w-3" />
+                      <Lock className="h-4 w-4" strokeWidth={1.75} />
                       私密
                     </>
                   )}
@@ -1066,19 +1067,22 @@ export default function PhotoPage() {
 
               <div className="space-y-2">
                 <Label>标签</Label>
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {editForm.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="text-xs">
-                      {tag}
-                      <button
-                        onClick={() => removeEditTag(tag)}
-                        className="ml-1 hover:text-destructive"
-                      >
-                        ×
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
+                {editForm.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {editForm.tags.map((tag) => (
+                      <Badge key={tag} variant="secondary">
+                        {tag}
+                        <button
+                          onClick={() => removeEditTag(tag)}
+                          className="ml-1.5 transition-colors hover:text-destructive"
+                          aria-label={`移除标签 ${tag}`}
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <Input
                     value={editTagInput}
@@ -1091,55 +1095,48 @@ export default function PhotoPage() {
                       }
                     }}
                   />
-                  <Button variant="outline" size="sm" onClick={addEditTag}>
-                    <Tag className="mr-1 h-3 w-3" />
+                  <Button variant="outline" onClick={addEditTag}>
+                    <Tag className="h-4 w-4" strokeWidth={1.75} />
                     添加
                   </Button>
                 </div>
               </div>
+            </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowEditDialog(false)}
-                  disabled={isSaving}
-                >
-                  取消
-                </Button>
-                <Button onClick={handleSaveEdit} disabled={isSaving}>
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      保存中...
-                    </>
-                  ) : (
-                    "保存"
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowEditDialog(false)}
+                disabled={isSaving}
+              >
+                取消
+              </Button>
+              <Button onClick={handleSaveEdit} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+                    保存中...
+                  </>
+                ) : (
+                  "保存"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* ========== 批量编辑对话框 ========== */}
       {showBatchEditDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>批量编辑</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowBatchEditDialog(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <CardDescription>将修改应用到 {selectedIds.size} 张图片</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <Dialog open onOpenChange={setShowBatchEditDialog}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogClose onClick={() => setShowBatchEditDialog(false)} />
+            <DialogHeader>
+              <DialogTitle>批量编辑</DialogTitle>
+              <DialogDescription>将修改应用到 {selectedIds.size} 张图片</DialogDescription>
+            </DialogHeader>
+
+            <div className="mt-5 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="batch-name">名称</Label>
                 <Input
@@ -1160,7 +1157,7 @@ export default function PhotoPage() {
                 />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <Label>公开状态</Label>
                 <Button
                   variant={batchForm.is_public ? "default" : "outline"}
@@ -1175,19 +1172,22 @@ export default function PhotoPage() {
 
               <div className="space-y-2">
                 <Label>标签</Label>
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {batchForm.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="text-xs">
-                      {tag}
-                      <button
-                        onClick={() => removeBatchTag(tag)}
-                        className="ml-1 hover:text-destructive"
-                      >
-                        ×
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
+                {batchForm.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {batchForm.tags.map((tag) => (
+                      <Badge key={tag} variant="secondary">
+                        {tag}
+                        <button
+                          onClick={() => removeBatchTag(tag)}
+                          className="ml-1.5 transition-colors hover:text-destructive"
+                          aria-label={`移除标签 ${tag}`}
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <Input
                     value={batchTagInput}
@@ -1200,121 +1200,121 @@ export default function PhotoPage() {
                       }
                     }}
                   />
-                  <Button variant="outline" size="sm" onClick={addBatchTag}>
-                    <Tag className="mr-1 h-3 w-3" />
+                  <Button variant="outline" onClick={addBatchTag}>
+                    <Tag className="h-4 w-4" strokeWidth={1.75} />
                     添加
                   </Button>
                 </div>
               </div>
+            </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowBatchEditDialog(false)}
-                  disabled={isSaving}
-                >
-                  取消
-                </Button>
-                <Button onClick={handleBatchEdit} disabled={isSaving}>
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      保存中...
-                    </>
-                  ) : (
-                    "批量保存"
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowBatchEditDialog(false)}
+                disabled={isSaving}
+              >
+                取消
+              </Button>
+              <Button onClick={handleBatchEdit} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+                    保存中...
+                  </>
+                ) : (
+                  "批量保存"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
 
-      {/* ========== 图片详情对话框 ========== */}
+      {/* ========== 图片详情对话框（灯箱） ========== */}
       {showDetailDialog && detailPhoto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>图片详情</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowDetailDialog(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <Dialog open onOpenChange={setShowDetailDialog}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogClose onClick={() => setShowDetailDialog(false)} />
+            <DialogHeader>
+              <DialogTitle>图片详情</DialogTitle>
+              <DialogDescription>{detailPhoto.name || detailPhoto.filename}</DialogDescription>
+            </DialogHeader>
+
+            <div className="mt-5 space-y-4">
               {/* 大图预览 */}
-              <div className="flex justify-center bg-muted rounded-lg p-4">
+              <div className="flex justify-center overflow-hidden rounded-lg bg-secondary p-2">
                 <img
                   src={detailPhoto.public_url}
                   alt={detailPhoto.name}
-                  className="max-h-96 rounded-lg object-contain"
+                  className="max-h-72 rounded-md object-contain"
                 />
               </div>
 
               {/* 信息列表 */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-muted-foreground">名称</p>
-                  <p className="font-medium">{detailPhoto.name || "-"}</p>
+                  <p className="text-[12px] text-muted-foreground">名称</p>
+                  <p className="mt-0.5 text-[14px] font-medium">{detailPhoto.name || "-"}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">文件名</p>
-                  <p className="font-medium">{detailPhoto.filename}</p>
+                  <p className="text-[12px] text-muted-foreground">文件名</p>
+                  <p className="mt-0.5 truncate text-[14px] font-medium">{detailPhoto.filename}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">简介</p>
-                  <p className="font-medium">{detailPhoto.intro || "-"}</p>
+                  <p className="text-[12px] text-muted-foreground">简介</p>
+                  <p className="mt-0.5 text-[14px] font-medium">{detailPhoto.intro || "-"}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">类型</p>
-                  <p className="font-medium">{detailPhoto.mimetype}</p>
+                  <p className="text-[12px] text-muted-foreground">类型</p>
+                  <p className="mt-0.5 text-[14px] font-medium">{detailPhoto.mimetype}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">尺寸</p>
-                  <p className="font-medium">
+                  <p className="text-[12px] text-muted-foreground">尺寸</p>
+                  <p className="mt-0.5 text-[14px] font-medium tabular-nums">
                     {detailPhoto.width} × {detailPhoto.height}
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">公开状态</p>
-                  <Badge variant={detailPhoto.is_public ? "success" : "outline"}>
-                    {detailPhoto.is_public ? "公开" : "私密"}
-                  </Badge>
+                  <p className="text-[12px] text-muted-foreground">公开状态</p>
+                  <div className="mt-1">
+                    <Badge variant={detailPhoto.is_public ? "success" : "outline"}>
+                      {detailPhoto.is_public ? "公开" : "私密"}
+                    </Badge>
+                  </div>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">MD5</p>
-                  <p className="font-medium font-mono text-xs">{detailPhoto.md5}</p>
+                  <p className="text-[12px] text-muted-foreground">MD5</p>
+                  <p className="mt-0.5 break-all font-mono text-[12px]">{detailPhoto.md5}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">SHA1</p>
-                  <p className="font-medium font-mono text-xs">{detailPhoto.sha1}</p>
+                  <p className="text-[12px] text-muted-foreground">SHA1</p>
+                  <p className="mt-0.5 break-all font-mono text-[12px]">{detailPhoto.sha1}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">上传时间</p>
-                  <p className="font-medium">{formatDate(detailPhoto.created_at)}</p>
+                  <p className="text-[12px] text-muted-foreground">上传时间</p>
+                  <p className="mt-0.5 text-[14px] font-medium tabular-nums">
+                    {formatDate(detailPhoto.created_at)}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">上传 IP</p>
-                  <p className="font-medium">{detailPhoto.ip_address}</p>
+                  <p className="text-[12px] text-muted-foreground">上传 IP</p>
+                  <p className="mt-0.5 text-[14px] font-medium tabular-nums">
+                    {detailPhoto.ip_address}
+                  </p>
                 </div>
                 {detailPhoto.storage && (
                   <div>
-                    <p className="text-muted-foreground">存储</p>
-                    <p className="font-medium">
+                    <p className="text-[12px] text-muted-foreground">存储</p>
+                    <p className="mt-0.5 text-[14px] font-medium">
                       {detailPhoto.storage.name} ({detailPhoto.storage.provider})
                     </p>
                   </div>
                 )}
                 {detailPhoto.album && (
                   <div>
-                    <p className="text-muted-foreground">相册</p>
-                    <p className="font-medium">{detailPhoto.album.name}</p>
+                    <p className="text-[12px] text-muted-foreground">相册</p>
+                    <p className="mt-0.5 text-[14px] font-medium">{detailPhoto.album.name}</p>
                   </div>
                 )}
               </div>
@@ -1322,8 +1322,8 @@ export default function PhotoPage() {
               {/* 标签 */}
               {detailPhoto.tags && detailPhoto.tags.length > 0 && (
                 <div>
-                  <p className="text-sm text-muted-foreground mb-2">标签</p>
-                  <div className="flex flex-wrap gap-1">
+                  <p className="text-[12px] text-muted-foreground">标签</p>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
                     {detailPhoto.tags.map((tag) => (
                       <Badge key={tag.id} variant="secondary">
                         {tag.name}
@@ -1332,27 +1332,25 @@ export default function PhotoPage() {
                   </div>
                 </div>
               )}
+            </div>
 
-              {/* 操作 */}
-              <div className="flex gap-2 pt-4">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => copyUrl(detailPhoto.public_url)}
-                >
-                  <Copy className="mr-2 h-4 w-4" />
-                  复制链接
-                </Button>
-                <Button variant="outline" className="flex-1" asChild>
-                  <a href={detailPhoto.public_url} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    打开原图
-                  </a>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => copyUrl(detailPhoto.public_url)}>
+                <Copy className="h-4 w-4" strokeWidth={1.75} />
+                复制链接
+              </Button>
+              <a
+                href={detailPhoto.public_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(buttonVariants({ variant: "outline" }))}
+              >
+                <ExternalLink className="h-4 w-4" strokeWidth={1.75} />
+                打开原图
+              </a>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* ========== 删除确认对话框 ========== */}

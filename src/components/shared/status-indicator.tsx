@@ -48,9 +48,9 @@ const ringSizeMap = {
 };
 
 const textSizeMap = {
-  sm: "text-xs",
-  md: "text-sm",
-  lg: "text-sm",
+  sm: "text-[12px]",
+  md: "text-[12px]",
+  lg: "text-[14px]",
 };
 
 // ---------------------------------------------------------------------------

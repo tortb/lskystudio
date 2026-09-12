@@ -50,44 +50,44 @@ export function BatchToolbar({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-2 rounded-lg border bg-card p-3",
+        "flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border/60 pb-3",
         className,
       )}
     >
       {/* 统计信息 */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <Badge variant="outline">
-          <Clock className="mr-1 h-3 w-3" />
+          <Clock className="mr-1 h-3 w-3" strokeWidth={1.75} />
           {pendingCount} 等待
         </Badge>
         {uploadingCount > 0 && (
           <Badge>
-            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+            <Loader2 className="mr-1 h-3 w-3 animate-spin" strokeWidth={1.75} />
             {uploadingCount} 上传中
           </Badge>
         )}
         {successCount > 0 && (
           <Badge variant="success">
-            <CheckCircle className="mr-1 h-3 w-3" />
+            <CheckCircle className="mr-1 h-3 w-3" strokeWidth={1.75} />
             {successCount} 成功
           </Badge>
         )}
         {failedCount > 0 && (
           <Badge variant="destructive">
-            <XCircle className="mr-1 h-3 w-3" />
+            <XCircle className="mr-1 h-3 w-3" strokeWidth={1.75} />
             {failedCount} 失败
           </Badge>
         )}
       </div>
 
-      <Separator orientation="vertical" className="h-6" />
+      <Separator orientation="vertical" className="h-5" />
 
       {/* 操作按钮 */}
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1.5">
         {/* 开始全部 */}
         {!isUploading && pendingCount > 0 && onStartAll && (
           <Button size="sm" onClick={onStartAll}>
-            <Play className="mr-1 h-3 w-3" />
+            <Play className="mr-1 h-3.5 w-3.5" strokeWidth={1.75} />
             开始全部
           </Button>
         )}
@@ -95,7 +95,7 @@ export function BatchToolbar({
         {/* 暂停全部 */}
         {isUploading && onPauseAll && (
           <Button size="sm" variant="outline" onClick={onPauseAll}>
-            <Pause className="mr-1 h-3 w-3" />
+            <Pause className="mr-1 h-3.5 w-3.5" strokeWidth={1.75} />
             暂停全部
           </Button>
         )}
@@ -103,7 +103,7 @@ export function BatchToolbar({
         {/* 继续全部 */}
         {!isUploading && (pendingCount > 0 || uploadingCount > 0) && onResumeAll && (
           <Button size="sm" variant="outline" onClick={onResumeAll}>
-            <Play className="mr-1 h-3 w-3" />
+            <Play className="mr-1 h-3.5 w-3.5" strokeWidth={1.75} />
             继续全部
           </Button>
         )}
@@ -111,7 +111,7 @@ export function BatchToolbar({
         {/* 取消全部 */}
         {(pendingCount > 0 || uploadingCount > 0) && onCancelAll && (
           <Button size="sm" variant="destructive" onClick={onCancelAll}>
-            <Square className="mr-1 h-3 w-3" />
+            <Square className="mr-1 h-3.5 w-3.5" strokeWidth={1.75} />
             取消全部
           </Button>
         )}
@@ -119,12 +119,12 @@ export function BatchToolbar({
         {/* 重试失败 */}
         {failedCount > 0 && onRetryFailed && (
           <Button size="sm" variant="outline" onClick={onRetryFailed}>
-            <RotateCcw className="mr-1 h-3 w-3" />
+            <RotateCcw className="mr-1 h-3.5 w-3.5" strokeWidth={1.75} />
             重试失败
           </Button>
         )}
 
-        <Separator orientation="vertical" className="h-6" />
+        <Separator orientation="vertical" className="h-5" />
 
         {/* 清除成功 */}
         {successCount > 0 && onClearSuccess && (
@@ -136,7 +136,7 @@ export function BatchToolbar({
         {/* 清除全部 */}
         {totalCount > 0 && onClearAll && (
           <Button size="sm" variant="ghost" onClick={onClearAll}>
-            <Trash2 className="mr-1 h-3 w-3" />
+            <Trash2 className="mr-1 h-3.5 w-3.5" strokeWidth={1.75} />
             清除全部
           </Button>
         )}

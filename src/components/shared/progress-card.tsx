@@ -112,15 +112,12 @@ export function ProgressCard({
   return (
     <div
       className={cn(
-        "group relative flex items-start gap-4 rounded-lg border p-4 transition-all duration-200",
-        status === "success" && "border-success/20 bg-success/5",
-        status === "failed" && "border-destructive/20 bg-destructive/5",
-        status === "uploading" && "border-primary/20 bg-primary/5",
+        "group relative flex items-start gap-3.5 border-b border-border/60 px-1 py-3.5 transition-colors last:border-b-0 hover:bg-secondary/40",
         className,
       )}
     >
       {/* 缩略图 */}
-      <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded bg-muted">
+      <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md bg-secondary">
         {thumbnailUrl || url ? (
           <>
             <img
@@ -146,9 +143,9 @@ export function ProgressCard({
 
         {/* 上传中覆盖层 */}
         {status === "uploading" && (
-          <div className="absolute inset-0 bg-black/20">
+          <div className="absolute inset-0 bg-foreground/25">
             <div
-              className="absolute bottom-0 left-0 right-0 bg-primary transition-all duration-200"
+              className="absolute bottom-0 left-0 right-0 bg-primary transition-[height] duration-300 ease-out"
               style={{ height: `${progress}%` }}
             />
           </div>
@@ -156,25 +153,25 @@ export function ProgressCard({
       </div>
 
       {/* 信息区域 */}
-      <div className="flex-1 min-w-0 space-y-1">
+      <div className="min-w-0 flex-1 space-y-1">
         {/* 文件名 */}
-        <p className="text-sm font-medium truncate" title={fileName}>
+        <p className="truncate text-[14px] font-medium leading-tight" title={fileName}>
           {fileName}
         </p>
 
         {/* 文件大小 */}
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[12px] tabular-nums text-muted-foreground">
           {formatFileSize(fileSize)}
         </p>
 
         {/* 进度条 */}
         {(status === "uploading" || status === "paused") && (
-          <div className="space-y-1">
+          <div className="space-y-1 pt-0.5">
             <Progress
               value={progress}
-              className={cn("h-2", getProgressColor())}
+              className={cn("h-1", getProgressColor())}
             />
-            <div className="flex justify-between text-xs text-muted-foreground">
+            <div className="flex justify-between text-[12px] tabular-nums text-muted-foreground">
               <span>{progress}%</span>
               <span>{formatFileSize(fileSize * progress / 100)} / {formatFileSize(fileSize)}</span>
             </div>
@@ -182,20 +179,20 @@ export function ProgressCard({
         )}
 
         {/* 状态 */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 pt-0.5">
           {getStatusIcon()}
           {getStatusBadge()}
         </div>
 
         {/* 错误信息 */}
         {error && (
-          <p className="text-xs text-destructive line-clamp-2">{error}</p>
+          <p className="line-clamp-2 text-[12px] text-destructive">{error}</p>
         )}
 
         {/* URL */}
         {url && status === "success" && (
           <div className="flex items-center gap-1">
-            <p className="text-xs text-muted-foreground truncate flex-1">
+            <p className="flex-1 truncate text-[12px] text-muted-foreground">
               {url}
             </p>
           </div>
@@ -203,39 +200,39 @@ export function ProgressCard({
       </div>
 
       {/* 操作按钮 */}
-      <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex shrink-0 flex-col gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
         {/* 上传中 */}
         {status === "uploading" && onPause && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onPause}>
+          <Button variant="ghost" size="icon-sm" onClick={onPause} aria-label="暂停">
             <Pause className="h-4 w-4" />
           </Button>
         )}
 
         {/* 已暂停 */}
         {status === "paused" && onResume && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onResume}>
+          <Button variant="ghost" size="icon-sm" onClick={onResume} aria-label="继续">
             <RotateCcw className="h-4 w-4" />
           </Button>
         )}
 
         {/* 失败 */}
         {status === "failed" && onRetry && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onRetry}>
+          <Button variant="ghost" size="icon-sm" onClick={onRetry} aria-label="重试">
             <RotateCcw className="h-4 w-4" />
           </Button>
         )}
 
         {/* 成功 - 复制链接 */}
         {status === "success" && url && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={copyUrl}>
+          <Button variant="ghost" size="icon-sm" onClick={copyUrl} aria-label="复制链接">
             <Copy className="h-4 w-4" />
           </Button>
         )}
 
         {/* 成功 - 打开链接 */}
         {status === "success" && url && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-            <a href={url} target="_blank" rel="noopener noreferrer">
+          <Button variant="ghost" size="icon-sm" asChild>
+            <a href={url} target="_blank" rel="noopener noreferrer" aria-label="打开链接">
               <ExternalLink className="h-4 w-4" />
             </a>
           </Button>
@@ -243,13 +240,13 @@ export function ProgressCard({
 
         {/* 取消/删除 */}
         {(status === "pending" || status === "paused" || status === "failed" || status === "cancelled") && onRemove && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onRemove}>
+          <Button variant="ghost" size="icon-sm" onClick={onRemove} aria-label="移除">
             <X className="h-4 w-4" />
           </Button>
         )}
 
         {status === "uploading" && onCancel && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onCancel}>
+          <Button variant="ghost" size="icon-sm" onClick={onCancel} aria-label="取消">
             <X className="h-4 w-4" />
           </Button>
         )}

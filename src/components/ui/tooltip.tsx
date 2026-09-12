@@ -68,7 +68,7 @@ export function Tooltip({
       {isOpen && (
         <div
           className={cn(
-            "absolute z-50 rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95",
+            "pointer-events-none absolute z-50 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-[12px] font-medium text-background shadow-popover animate-in fade-in-0 zoom-in-95",
             positionClasses[side],
             alignClasses[align],
             className,
@@ -108,7 +108,7 @@ export function TooltipContent({
   return (
     <div
       className={cn(
-        "rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md",
+        "rounded-md bg-foreground px-2 py-1 text-[12px] font-medium text-background shadow-popover",
         className,
       )}
     >

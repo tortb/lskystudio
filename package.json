@@ -1,7 +1,7 @@
 {
   "name": "lsky-studio",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,7 +15,7 @@
     "build:linux": "node scripts/build.cjs build-linux",
     "dev:app": "node scripts/build.cjs dev",
     "check": "node scripts/build.cjs check",
-    "icons": "node scripts/generate-icons.cjs"
+    "icons": "tauri icon src-tauri/icons/logo.png -o src-tauri/icons"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
