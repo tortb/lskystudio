@@ -587,19 +587,31 @@ pub async fn attempt_upload(
 
     let status = response.status();
     let text = response.text().await?;
-    let body: Value =
-        serde_json::from_str(&text).map_err(|err| UploadError::Parse(err.to_string()))?;
+    // 网关/代理在 5xx 时通常返回 HTML 错误页，若先按 JSON 解析，真实状态码会被
+    // 吞成一句「解析响应失败」，且不再具备重试资格（5xx 本应重试）。
+    // 因此先按状态码分支，只有 2xx 才要求响应体是 JSON。
+    let parsed: Option<Value> = serde_json::from_str(&text).ok();
 
     if !status.is_success() {
+        let message = parsed
+            .as_ref()
+            .and_then(|body| body.get("message"))
+            .and_then(Value::as_str)
+            .map(str::to_string)
+            .unwrap_or_else(|| response_snippet(&text));
         return Err(UploadError::Http {
             status: status.as_u16(),
-            message: body
-                .get("message")
-                .and_then(|v| v.as_str())
-                .unwrap_or("请求失败")
-                .to_string(),
+            message,
         });
     }
+
+    let body = parsed.ok_or_else(|| {
+        UploadError::Parse(format!(
+            "HTTP {} 返回了非 JSON 响应: {}",
+            status.as_u16(),
+            response_snippet(&text)
+        ))
+    })?;
 
     if !is_upload_success(&body) {
         return Err(UploadError::Api(
@@ -638,6 +650,17 @@ fn is_upload_success(body: &Value) -> bool {
         Some(Value::String(status)) => status == "success",
         Some(Value::Number(number)) => number.as_i64() == Some(200),
         _ => false,
+    }
+}
+
+/// 响应体不是 JSON 时截取正文片段，便于定位网关返回的 HTML 错误页
+fn response_snippet(text: &str) -> String {
+    let compact = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    let snippet: String = compact.chars().take(200).collect();
+    if snippet.is_empty() {
+        "响应为空".to_string()
+    } else {
+        snippet
     }
 }
 
@@ -857,6 +880,61 @@ mod tests {
             other => panic!("期望 NotFound，实际为 {other:?}"),
         }
         assert!(!UploadError::NotFound.retryable());
+    }
+
+    /// 网关 5xx 返回 HTML 错误页：必须保留状态码（可重试），而不是报「解析响应失败」
+    #[tokio::test]
+    async fn gateway_html_error_keeps_status_and_stays_retryable() {
+        let api_url = spawn_server(
+            "HTTP/1.1 502 Bad Gateway",
+            "<html>\n  <head><title>502 Bad Gateway</title></head>\n</html>",
+        )
+        .await;
+
+        let path = temp_file_path("gateway.png");
+        tokio::fs::write(&path, b"fake-image-bytes").await.unwrap();
+
+        let result = attempt_upload(
+            reqwest::Client::new(),
+            Arc::new(path.clone()),
+            session(api_url),
+            Arc::new(|_, _| {}),
+        )
+        .await;
+        tokio::fs::remove_file(&path).await.ok();
+
+        match result {
+            Err(err @ UploadError::Http { status: 502, .. }) => {
+                assert!(err.retryable(), "5xx 应当可重试");
+                assert!(
+                    err.to_string().contains("502 Bad Gateway"),
+                    "错误信息应带上响应片段，实际为 {err}"
+                );
+            }
+            other => panic!("期望 Http 502，实际为 {other:?}"),
+        }
+    }
+
+    /// 2xx 却返回非 JSON：报解析错误并带上状态码与响应片段，便于定位
+    #[tokio::test]
+    async fn non_json_success_response_reports_snippet() {
+        let api_url = spawn_server("HTTP/1.1 200 OK", "not-json").await;
+
+        let path = temp_file_path("nonjson.png");
+        tokio::fs::write(&path, b"fake-image-bytes").await.unwrap();
+
+        let result = attempt_upload(
+            reqwest::Client::new(),
+            Arc::new(path.clone()),
+            session(api_url),
+            Arc::new(|_, _| {}),
+        )
+        .await;
+        tokio::fs::remove_file(&path).await.ok();
+
+        let message = result.unwrap_err().to_string();
+        assert!(message.contains("HTTP 200"), "实际为 {message}");
+        assert!(message.contains("not-json"), "实际为 {message}");
     }
 
     #[test]

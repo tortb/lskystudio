@@ -2,20 +2,20 @@
 
 现代化的兰空图床桌面客户端，基于 Tauri 2 + React + TypeScript 构建。
 
-## ✨ 特性
+## 特性
 
-- 🚀 **现代化 UI** - 基于 React + Tailwind CSS 自建组件库
-- 🎨 **深色/浅色主题** - 支持主题切换（浅色/深色/跟随系统）
-- 📁 **拖拽上传** - 支持拖拽文件上传
-- ⚡ **批量上传** - 支持并发上传控制、断点续传
-- 📊 **进度显示** - 实时显示上传进度
-- 📋 **历史记录** - 查看上传历史、导出 CSV
-- 🖼️ **图片管理** - 列表/网格视图、搜索筛选、批量编辑/删除、标签管理
-- 📁 **相册管理** - 创建/编辑/删除相册、管理相册标签
-- 💻 **双模式** - 支持 Tauri 桌面端和浏览器 Web 模式
-- 🌐 **跨平台** - 支持 Windows 和 Linux
+- 现代化 UI - 基于 React + Tailwind CSS 自建组件库
+- 深色/浅色主题 - 支持主题切换（浅色/深色/跟随系统）
+- 拖拽上传 - 支持拖拽文件上传
+- 批量上传 - 支持并发上传控制、断点续传
+- 进度显示 - 实时显示上传进度
+- 历史记录 - 查看上传历史、导出 CSV
+- 图片管理 - 列表/网格视图、搜索筛选、批量编辑/删除、标签管理
+- 相册管理 - 创建/编辑/删除相册、管理相册标签
+- 双模式 - 支持 Tauri 桌面端和浏览器 Web 模式
+- 跨平台 - 支持 Windows、macOS、Linux，覆盖 x86_64 与 arm64 架构
 
-## 🛠️ 技术栈
+## 技术栈
 
 - **前端**: React 18 + TypeScript + Vite
 - **UI**: Tailwind CSS + 自建组件库（类 shadcn/ui 风格）
@@ -24,12 +24,12 @@
 - **路由**: React Router 6
 - **后端**: Rust（Tauri commands）
 
-## 📦 安装
+## 安装
 
 ### 前置要求
 
 - Node.js 18+
-- pnpm
+- npm
 - Rust 工具链（Tauri 打包需要）
 - Linux 系统依赖（见下方）
 
@@ -44,21 +44,21 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 source "$HOME/.cargo/env"
 
 # Tauri CLI（已内置在依赖中，无需单独安装）
-# 项目通过 @tauri-apps/cli 管理，直接用 pnpm 命令即可
+# 项目通过 @tauri-apps/cli 管理，直接用 npm 命令即可
 ```
 
 ### 安装项目依赖
 
 ```bash
-pnpm install
+npm install
 ```
 
-## 🚀 开发
+## 开发
 
 ### 浏览器模式（Web）
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 访问 http://localhost:5173
@@ -66,33 +66,28 @@ pnpm dev
 ### Tauri 桌面模式
 
 ```bash
-pnpm tauri dev
+npm run tauri dev
 ```
 
-## 📦 构建
+## 构建
 
-### 开发模式
+### 打包当前平台
 
-```bash
-# 浏览器模式（Web）
-pnpm dev
-
-# Tauri 桌面模式
-pnpm tauri dev
-```
-
-### 打包生产版本
-
-> ⚠️ 必须使用 `pnpm tauri build`，不能直接用 `cargo build`。`pnpm tauri build` 会依次执行：前端构建 → Rust 编译 → 生成安装包。仅 `cargo build` 只编译二进制，不会生成 `.deb`/`.AppImage` 等安装包。
+必须使用 `npm run tauri build`，不能直接用 `cargo build`。`npm run tauri build` 会依次执行：前端构建 -> Rust 编译 -> 生成安装包。仅 `cargo build` 只编译二进制，不会生成 `.deb`/`.AppImage` 等安装包。
 
 ```bash
 # 构建前端 + 编译 Rust + 打包安装包
-pnpm tauri build
+npm run tauri build
+
+# 只打指定格式
+npm run tauri build -- --bundles deb
 ```
 
 打包产物位置：
-- **Linux**: `src-tauri/target/release/bundle/deb/`（`.deb`）、`bundle/rpm/`（`.rpm`）、`bundle/appimage/`（`.AppImage`）
+
+- **Linux**: `src-tauri/target/release/bundle/deb/`（`.deb`）、`bundle/appimage/`（`.AppImage`）
 - **Windows**: `src-tauri/target/release/bundle/nsis/`（`.exe`）
+- **macOS**: `src-tauri/target/release/bundle/dmg/`（`.dmg`）、`bundle/macos/`（`.app`）
 
 ### 从 Linux 交叉编译 Windows 版本
 
@@ -109,14 +104,37 @@ rustup target add x86_64-pc-windows-msvc
 cargo install --locked cargo-xwin
 
 # 4. 构建 Windows 版本
-pnpm tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc
+npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc
 ```
 
 产物位于 `src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/`。
 
-> **注意**: 首次构建时 cargo-xwin 会自动下载 Windows SDK（约几百 MB），可用 `XWIN_CACHE_DIR` 环境变量指定缓存目录。macOS 打包需在 macOS 上构建（不支持交叉编译到 macOS）。
+说明：首次构建时 cargo-xwin 会自动下载 Windows SDK（约几百 MB），可用 `XWIN_CACHE_DIR` 环境变量指定缓存目录。macOS 打包需在 macOS 上构建（不支持交叉编译到 macOS）。
 
-## 📁 项目结构
+## 发布
+
+版本发布统一走 GitHub Actions，本地无需打包。工作流见 [.github/workflows/build.yml](.github/workflows/build.yml)，覆盖 Windows / macOS / Linux 及各自 x86_64、arm64 架构。
+
+1. 更新版本号，保持以下文件一致：
+
+   - `package.json`
+   - `package-lock.json`（`npm ci` 会校验该版本号）
+   - `src-tauri/Cargo.toml`
+   - `src-tauri/Cargo.lock`
+   - `src-tauri/tauri.conf.json`
+
+2. 提交并推送 tag：
+
+```bash
+git commit -am "release: v1.0.3"
+git push
+git tag v1.0.3
+git push origin v1.0.3
+```
+
+3. 推送 tag 后工作流自动构建各平台安装包，并发布对应的 GitHub Release。
+
+## 项目结构
 
 ```
 lsky-studio/
@@ -144,6 +162,7 @@ lsky-studio/
 │   │   ├── upload.rs             # 上传引擎（upload_* 命令）
 │   │   ├── files.rs              # 文件选择（select_files 命令）
 │   │   └── error.rs              # 错误类型
+│   ├── icons/                    # 应用图标（logo.png 为源图）
 │   ├── Cargo.toml                # Rust 依赖
 │   └── tauri.conf.json           # Tauri 配置
 │
@@ -154,14 +173,26 @@ lsky-studio/
 └── tsconfig.json
 ```
 
-## 🖼️ 功能模块
+## 图标
+
+应用图标的源图是 `src-tauri/icons/logo.png`，替换源图后重新生成各平台图标：
+
+```bash
+npm run icons
+```
+
+该命令会基于源图覆盖 `src-tauri/icons/` 下的全部图标（含 Windows 的 `icon.ico`、macOS 的 `icon.icns`）。前端标题栏与 `index.html` 的 favicon 直接引用 `src-tauri/icons/` 中的 PNG。
+
+## 功能模块
 
 ### 仪表盘
+
 - 服务状态监控
 - 最近上传记录
 - 快速操作入口
 
 ### 上传
+
 - 拖拽上传
 - 批量上传
 - 并发控制
@@ -169,6 +200,7 @@ lsky-studio/
 - 断点续传
 
 ### 图片管理
+
 - 列表/网格双视图
 - 搜索筛选（关键字、公开状态、排序）
 - 单图编辑（名称、简介、公开状态、标签）
@@ -177,30 +209,33 @@ lsky-studio/
 - 复制链接/打开原图
 
 ### 相册管理
+
 - 创建/编辑/删除相册
 - 相册封面展示
 - 相册标签管理
 
 ### 历史记录
+
 - 上传历史查看
 - 状态筛选（成功/失败）
 - 导出 CSV
 
 ### 设置
+
 - API 配置
 - 存储策略选择
 - 上传参数配置
 - 主题切换
 
-## 📄 许可证
+## 许可证
 
 MIT License
 
-## 👨‍💻 作者
+## 作者
 
 蜀枕清何
 
-## 🔗 链接
+## 链接
 
 - [GitHub 仓库](https://github.com/tortb/lskystudio)
 - [兰空图床](https://www.lsky.pro)

@@ -47,16 +47,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
+          cache: npm
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -88,16 +83,17 @@ jobs:
             libxdo-dev
 
       - name: Install frontend dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Build and release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
+          # 仅 tag 推送时创建/更新 Release；手动触发只构建产物，避免用分支名当 tag
+          tagName: ${{ github.event_name == 'push' && github.ref_name || '' }}
           releaseName: "Lsky Studio ${{ github.ref_name }}"
           releaseBody: "See the assets below to download the installer for your platform."
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}

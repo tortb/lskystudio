@@ -46,12 +46,13 @@ function checkDependencies() {
     process.exit(1);
   }
 
-  // 检查 pnpm
+  // 检查 npm
   try {
-    const pnpmVersion = execSync('pnpm --version', { encoding: 'utf-8' }).trim();
-    console.log(`pnpm: ${pnpmVersion}`);
+    const npmVersion = execSync('npm --version', { encoding: 'utf-8' }).trim();
+    console.log(`npm: ${npmVersion}`);
   } catch {
-    console.error('警告: 未安装 pnpm，将使用 npm');
+    console.error('错误: 未安装 npm');
+    process.exit(1);
   }
 
   console.log('依赖检查完成\n');
@@ -62,7 +63,7 @@ function installDependencies() {
   console.log('安装依赖...');
 
   // 安装前端依赖
-  run('pnpm install || npm install');
+  run('npm install');
 
   console.log('依赖安装完成\n');
 }
@@ -71,7 +72,7 @@ function installDependencies() {
 function buildFrontend() {
   console.log('构建前端...');
 
-  run('pnpm build || npm run build');
+  run('npm run build');
 
   console.log('前端构建完成\n');
 }
@@ -81,8 +82,8 @@ function buildTauri(target = null) {
   console.log('构建 Tauri 应用...');
 
   const command = target
-    ? `pnpm tauri build --target ${target}`
-    : 'pnpm tauri build';
+    ? `npm run tauri build -- --target ${target}`
+    : 'npm run tauri build';
 
   run(command);
 
@@ -133,7 +134,7 @@ function main() {
     case 'dev':
       checkDependencies();
       installDependencies();
-      run('pnpm tauri dev || npm run tauri dev');
+      run('npm run tauri dev');
       break;
 
     default:

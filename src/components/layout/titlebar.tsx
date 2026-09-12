@@ -55,7 +55,7 @@ export function Titlebar() {
     getCurrentWindow().close();
   }, []);
 
-  // 浏览器模式（pnpm dev 在浏览器中预览）不渲染自定义标题栏
+  // 浏览器模式（npm run dev 在浏览器中预览）不渲染自定义标题栏
   if (!isTauriEnv) return null;
 
   return (

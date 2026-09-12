@@ -70,16 +70,30 @@ install_rust() {
 install_dependencies() {
     info "安装 Node.js 依赖..."
 
+    if ! check_command node || ! check_command npm; then
+        error "未检测到 Node.js/npm，请先安装: https://nodejs.org/"
+    fi
+
+    info "Node: $(node --version) / npm: $(npm --version)"
+
     # 安装主项目依赖
-    pnpm install || npm install
-
-    # 批准 esbuild 构建脚本
-    pnpm approve-builds esbuild 2>/dev/null || true
-
-    # 再次安装确保 esbuild 正确安装
-    pnpm install || npm install
+    npm install
 
     success "依赖安装完成!"
+}
+
+# 基于源图重新生成全平台图标
+generate_icons() {
+    info "生成应用图标..."
+
+    local source="src-tauri/icons/logo.png"
+    if [ ! -f "$source" ]; then
+        error "未找到图标源图: $source"
+    fi
+
+    npm run icons 2>&1 | tee "$LOG_DIR/icons.log"
+
+    success "图标已生成到 src-tauri/icons/"
 }
 
 # 启动开发模式（浏览器，带日志）
@@ -209,7 +223,8 @@ show_help() {
     echo "  setup       首次安装设置（安装 Rust 和依赖）"
     echo "  dev         启动开发模式（浏览器，带日志）"
     echo "  tauri       启动 Tauri 开发模式（需要 Rust）"
-    echo "  build       构建应用"
+    echo "  build       本地构建应用（正式发布由 GitHub Actions 完成）"
+    echo "  icons       基于 src-tauri/icons/logo.png 重新生成全平台图标"
     echo "  clean       清理构建缓存"
     echo "  logs        查看所有日志"
     echo "  logs fe     查看前端日志"
@@ -240,6 +255,9 @@ main() {
             ;;
         build)
             build_app
+            ;;
+        icons)
+            generate_icons
             ;;
         clean)
             clean_cache

@@ -6,7 +6,7 @@
 
 - **Node.js** 18+ - https://nodejs.org/
 - **Rust** 1.75+ - https://rustup.rs/
-- **pnpm** - https://pnpm.io/
+- **npm** - https://nodejs.org/
 
 ### Linux 系统依赖
 
@@ -38,27 +38,27 @@ sudo pacman -S webkit2gtk-4.1 base-devel curl wget file openssl \
 ### 1. 安装项目依赖
 
 ```bash
-pnpm install
+npm install
 ```
 
 ### 2. 开发模式
 
 ```bash
 # 浏览器模式（Web）
-pnpm dev
+npm run dev
 
 # Tauri 桌面模式
-pnpm tauri dev
+npm run tauri dev
 ```
 
-> **注意**: 浏览器模式下不会显示窗口控制按钮（标题栏），因为 `window.__TAURI__` 仅在 Tauri WebView 中存在。需使用 `pnpm tauri dev` 测试桌面端功能。
+> **注意**: 浏览器模式下不会显示窗口控制按钮（标题栏），因为 `window.__TAURI__` 仅在 Tauri WebView 中存在。需使用 `npm run tauri dev` 测试桌面端功能。
 
 ### 3. 构建当前平台
 
-> ⚠️ 必须使用 `pnpm tauri build`，不能用 `cargo build`。`pnpm tauri build` 会依次执行：前端构建 → Rust 编译 → 生成安装包。`cargo build` 仅编译二进制，不会生成安装包。
+必须使用 `npm run tauri build`，不能用 `cargo build`。`npm run tauri build` 会依次执行：前端构建 -> Rust 编译 -> 生成安装包。`cargo build` 仅编译二进制，不会生成安装包。
 
 ```bash
-pnpm tauri build
+npm run tauri build
 ```
 
 ## 交叉编译
@@ -78,7 +78,7 @@ rustup target add x86_64-pc-windows-msvc
 cargo install --locked cargo-xwin
 
 # 4. 构建 Windows 版本
-pnpm tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc
+npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc
 ```
 
 产物位于 `src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/`。
@@ -90,7 +90,7 @@ pnpm tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc
 Tauri 不支持交叉编译到 macOS，必须在 macOS 上构建：
 
 ```bash
-pnpm tauri build
+npm run tauri build
 ```
 
 ## 构建输出
@@ -100,11 +100,11 @@ pnpm tauri build
 ```
 src-tauri/target/release/bundle/
 ├── deb/
-│   └── Lsky Studio_1.0.1_amd64.deb        # Debian/Ubuntu 安装包
+│   └── Lsky Studio_1.0.3_amd64.deb        # Debian/Ubuntu 安装包
 ├── rpm/
-│   └── Lsky Studio-1.0.1-1.x86_64.rpm     # Fedora/RHEL 安装包
+│   └── Lsky Studio-1.0.3-1.x86_64.rpm     # Fedora/RHEL 安装包
 └── appimage/
-    └── Lsky Studio_1.0.1_amd64.AppImage   # Linux 便携版
+    └── Lsky Studio_1.0.3_amd64.AppImage   # Linux 便携版
 ```
 
 ### Windows 构建
@@ -112,7 +112,17 @@ src-tauri/target/release/bundle/
 ```
 src-tauri/target/release/bundle/
 └── nsis/
-    └── Lsky Studio_1.0.1_x64-setup.exe    # Windows EXE 安装包
+    └── Lsky Studio_1.0.3_x64-setup.exe    # Windows EXE 安装包
+```
+
+### macOS 构建
+
+```
+src-tauri/target/release/bundle/
+├── macos/
+│   └── Lsky Studio.app                    # 应用本体
+└── dmg/
+    └── Lsky Studio_1.0.3_aarch64.dmg      # 磁盘映像
 ```
 
 交叉编译产物路径：
@@ -120,12 +130,33 @@ src-tauri/target/release/bundle/
 ```
 src-tauri/target/x86_64-pc-windows-msvc/release/bundle/
 └── nsis/
-    └── Lsky Studio_1.0.1_x64-setup.exe    # Windows EXE 安装包
+    └── Lsky Studio_1.0.3_x64-setup.exe    # Windows EXE 安装包
 ```
 
 ## 图标
 
-确保 `src-tauri/icons/` 目录包含以下文件，且必须为 **RGBA 格式**、像素尺寸**严格匹配文件名**：
+图标源图是 `src-tauri/icons/logo.png`（正方形，建议 1024×1024 以上）。替换源图后重新生成整套图标：
+
+```bash
+npm run icons
+```
+
+等价于 `tauri icon src-tauri/icons/logo.png -o src-tauri/icons`，会覆盖 `src-tauri/icons/` 下的全部图标，包括 Windows 的 `icon.ico` 与 macOS 的 `icon.icns`。
+
+`src-tauri/tauri.conf.json` 中 `bundle.icon` 列出了打包使用的图标，托盘图标由 `trayIcon.iconPath` 指定：
+
+```json
+"bundle": {
+  "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico", "icons/icon.png"]
+},
+"trayIcon": {
+  "iconPath": "icons/icon.png"
+}
+```
+
+前端标题栏图标与 `index.html` 的 favicon 直接引用 `src-tauri/icons/` 中的 PNG，替换源图后一并生效。
+
+图标必须为 **RGBA 格式**、像素尺寸严格匹配文件名：
 
 | 文件名 | 尺寸 |
 |--------|------|
@@ -137,6 +168,13 @@ src-tauri/target/x86_64-pc-windows-msvc/release/bundle/
 | `icon.icns` | macOS 图标 |
 
 > Tauri 编译时 `generate_context!()` 宏会校验图标格式和尺寸，RGB 格式或尺寸不匹配会报错 `icon ... is not RGBA`。
+
+Linux 下安装后桌面图标来自 `/usr/share/icons/hicolor/*/apps/lsky-studio.png`，覆盖安装新包即可更新；若仍显示旧图标，刷新缓存并重新登录：
+
+```bash
+sudo gtk-update-icon-cache -f -t /usr/share/icons/hicolor
+sudo update-desktop-database /usr/share/applications
+```
 
 ## 故障排除
 
@@ -190,85 +228,65 @@ for name, (w, h) in sizes.items():
 
 ```bash
 rm -rf node_modules
-pnpm install
+npm install
 ```
 
 ## CI/CD
 
-### GitHub Actions 多平台构建
+发布由 GitHub Actions 完成，工作流文件为 [.github/workflows/build.yml](.github/workflows/build.yml)，触发方式为推送 `v*` tag 或手动 `workflow_dispatch`。
 
-```yaml
-name: Build
+构建矩阵覆盖 5 个目标：
 
-on:
-  push:
-    tags: ['v*']
+| 平台 | Runner | 目标三元组 | 产物 |
+|------|--------|-----------|------|
+| macOS（arm64 + x86_64） | `macos-latest` | `universal-apple-darwin` | `.dmg` / `.app` |
+| Linux x86_64 | `ubuntu-22.04` | `x86_64-unknown-linux-gnu` | `.deb` / `.AppImage` |
+| Linux arm64 | `ubuntu-22.04-arm` | `aarch64-unknown-linux-gnu` | `.deb` / `.AppImage` |
+| Windows x86_64 | `windows-latest` | `x86_64-pc-windows-msvc` | `.msi` / `.exe` |
+| Windows arm64 | `windows-11-arm` | `aarch64-pc-windows-msvc` | `.exe`（arm64 仅支持 NSIS） |
 
-jobs:
-  build-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Install Linux dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y libwebkit2gtk-4.1-dev build-essential libssl-dev \
-            libayatana-appindicator3-dev librsvg2-dev patchelf lld llvm clang nsis
-      - run: pnpm install
-      - run: pnpm tauri build
-      - uses: actions/upload-artifact@v4
-        with:
-          name: release-linux
-          path: src-tauri/target/release/bundle/
+各任务流程：
 
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-      - uses: dtolnay/rust-toolchain@stable
-      - run: pnpm install
-      - run: pnpm tauri build
-      - uses: actions/upload-artifact@v4
-        with:
-          name: release-windows
-          path: src-tauri/target/release/bundle/
-```
+1. `actions/checkout` 拉取代码，设置 Node.js 22（`cache: npm`）与对应 Rust 目标
+2. `swatinem/rust-cache` 缓存 Rust 构建（按目标三元组分 key）
+3. Linux 任务安装系统依赖（webkit2gtk-4.1、ayatana-appindicator、`libfuse2` 等）
+4. `npm ci` 安装前端依赖
+5. `tauri-apps/tauri-action` 执行打包，并把产物上传到该 tag 对应的 Release
+
+> `npm ci` 会校验 `package-lock.json` 与 `package.json` 的一致性，同时校验根包版本号，因此改版本号时必须同步 `package-lock.json`。
 
 ## 发布
 
 ### 1. 更新版本号
 
-以下三个文件中的版本号需保持一致：
+以下文件中的版本号需保持一致：
 
 - `package.json`
+- `package-lock.json`（`npm ci` 会校验该版本号）
 - `src-tauri/Cargo.toml`
+- `src-tauri/Cargo.lock`
 - `src-tauri/tauri.conf.json`
 
-### 2. 构建安装包
+### 2. 提交并推送
 
 ```bash
-# Linux（在 Linux 上）
-pnpm tauri build
-
-# Windows（在 Windows 上或使用 cargo-xwin 交叉编译）
-pnpm tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc
+git commit -am "release: v1.0.3"
+git push
 ```
 
-### 3. 创建 GitHub Release
+### 3. 打 tag 触发构建与发布
 
-1. 推送代码到 GitHub
-2. 创建新的 Tag（如 `v1.0.1`）
-3. 上传构建产物
+```bash
+git tag v1.0.3
+git push origin v1.0.3
+```
+
+推送后 GitHub Actions 自动构建全部平台产物，并发布对应的 Release。也可在 Actions 页面手动触发 `workflow_dispatch`，此时只构建产物、不创建 Release。
+
+### 4. 本地安装（可选）
+
+以 Linux 为例：
+
+```bash
+sudo dpkg -i "src-tauri/target/release/bundle/deb/Lsky Studio_1.0.3_amd64.deb"
+```
