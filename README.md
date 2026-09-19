@@ -2,27 +2,53 @@
 
 现代化的兰空图床桌面客户端，基于 Tauri 2 + React + TypeScript 构建。
 
+## 界面预览
+
+<table>
+  <tr>
+    <td width="50%" align="center"><b>仪表盘</b>（浅色主题）<br><img src="public/img/white.png" alt="仪表盘" width="440"></td>
+    <td width="50%" align="center"><b>上传</b><br><img src="public/img/upload.png" alt="上传" width="440"></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><b>历史记录</b><br><img src="public/img/memory.png" alt="历史记录" width="440"></td>
+    <td width="50%" align="center"><b>图片管理</b><br><img src="public/img/photos.png" alt="图片管理" width="440"></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><b>设置</b><br><img src="public/img/setting.png" alt="设置" width="440"></td>
+    <td width="50%"></td>
+  </tr>
+</table>
+
 ## 特性
 
-- 现代化 UI - 基于 React + Tailwind CSS 自建组件库
-- 深色/浅色主题 - 支持主题切换（浅色/深色/跟随系统）
-- 拖拽上传 - 支持拖拽文件上传
-- 批量上传 - 支持并发上传控制、断点续传
-- 进度显示 - 实时显示上传进度
-- 历史记录 - 查看上传历史、导出 CSV
-- 图片管理 - 列表/网格视图、搜索筛选、批量编辑/删除、标签管理
-- 相册管理 - 创建/编辑/删除相册、管理相册标签
-- 双模式 - 支持 Tauri 桌面端和浏览器 Web 模式
-- 跨平台 - 支持 Windows、macOS、Linux，覆盖 x86_64 与 arm64 架构
+- **现代化 UI**：基于 React + Tailwind CSS 自建组件库
+- **深色/浅色主题**：支持主题切换（浅色/深色/跟随系统）
+- **拖拽上传**：支持拖拽文件上传
+- **批量上传**：支持并发上传控制、断点续传
+- **进度显示**：实时显示上传进度
+- **历史记录**：查看上传历史、导出 CSV
+- **图片管理**：列表/网格视图、搜索筛选、批量编辑/删除、标签管理
+- **相册管理**：创建/编辑/删除相册、管理相册标签
+- **双模式**：支持 Tauri 桌面端和浏览器 Web 模式
+- **跨平台**：支持 Windows、macOS、Linux，覆盖 x86_64 与 arm64 架构
+
+## 功能模块
+
+- **仪表盘**：服务状态监控、最近上传记录、快速操作入口
+- **上传**：拖拽上传、批量上传、并发控制、进度显示、断点续传
+- **历史记录**：上传历史查看、状态筛选（成功/失败）、导出 CSV
+- **图片管理**：列表/网格双视图、搜索筛选（关键字/公开状态/排序）、单图编辑、批量编辑/删除、大图预览、复制链接
+- **相册管理**：创建/编辑/删除相册、相册封面展示、相册标签管理
+- **设置**：API 配置、存储策略选择、上传参数配置、主题切换
 
 ## 技术栈
 
-- **前端**: React 18 + TypeScript + Vite
-- **UI**: Tailwind CSS + 自建组件库（类 shadcn/ui 风格）
-- **桌面框架**: Tauri 2
-- **图标**: Lucide Icons
-- **路由**: React Router 6
-- **后端**: Rust（Tauri commands）
+- **前端**：React 18 + TypeScript + Vite
+- **UI**：Tailwind CSS + 自建组件库（类 shadcn/ui 风格）
+- **桌面框架**：Tauri 2
+- **图标**：Lucide Icons
+- **路由**：React Router 6
+- **后端**：Rust（Tauri commands）
 
 ## 安装
 
@@ -83,11 +109,13 @@ npm run tauri build
 npm run tauri build -- --bundles deb
 ```
 
-打包产物位置：
+打包产物位置（相对于 `src-tauri/target/release/`）：
 
-- **Linux**: `src-tauri/target/release/bundle/deb/`（`.deb`）、`bundle/appimage/`（`.AppImage`）
-- **Windows**: `src-tauri/target/release/bundle/nsis/`（`.exe`）
-- **macOS**: `src-tauri/target/release/bundle/dmg/`（`.dmg`）、`bundle/macos/`（`.app`）
+| 平台 | 产物 |
+| --- | --- |
+| Linux | `bundle/deb/`（`.deb`）、`bundle/appimage/`（`.AppImage`） |
+| Windows | `bundle/nsis/`（`.exe`） |
+| macOS | `bundle/dmg/`（`.dmg`）、`bundle/macos/`（`.app`） |
 
 ### 从 Linux 交叉编译 Windows 版本
 
@@ -115,22 +143,15 @@ npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc
 
 版本发布统一走 GitHub Actions，本地无需打包。工作流见 [.github/workflows/build.yml](.github/workflows/build.yml)，覆盖 Windows / macOS / Linux 及各自 x86_64、arm64 架构。
 
-1. 更新版本号，保持以下文件一致：
+1. **更新版本号**，保持以下 5 个文件一致：`package.json`、`package-lock.json`（`npm ci` 会校验该版本号）、`src-tauri/Cargo.toml`、`src-tauri/Cargo.lock`、`src-tauri/tauri.conf.json`
+2. **提交并推送 tag**：
 
-   - `package.json`
-   - `package-lock.json`（`npm ci` 会校验该版本号）
-   - `src-tauri/Cargo.toml`
-   - `src-tauri/Cargo.lock`
-   - `src-tauri/tauri.conf.json`
-
-2. 提交并推送 tag：
-
-```bash
-git commit -am "release: v1.0.3"
-git push
-git tag v1.0.3
-git push origin v1.0.3
-```
+   ```bash
+   git commit -am "release: v1.0.4"
+   git push
+   git tag v1.0.4
+   git push origin v1.0.4
+   ```
 
 3. 推送 tag 后工作流自动构建各平台安装包，并发布对应的 GitHub Release。
 
@@ -167,6 +188,7 @@ lsky-studio/
 │   └── tauri.conf.json           # Tauri 配置
 │
 ├── docs/                         # 项目文档
+├── public/                       # 静态资源（界面预览截图位于 public/img/）
 ├── package.json
 ├── vite.config.ts
 ├── tailwind.config.ts
@@ -183,50 +205,6 @@ npm run icons
 
 该命令会基于源图覆盖 `src-tauri/icons/` 下的全部图标（含 Windows 的 `icon.ico`、macOS 的 `icon.icns`）。前端标题栏与 `index.html` 的 favicon 直接引用 `src-tauri/icons/` 中的 PNG。
 
-## 功能模块
-
-### 仪表盘
-
-- 服务状态监控
-- 最近上传记录
-- 快速操作入口
-
-### 上传
-
-- 拖拽上传
-- 批量上传
-- 并发控制
-- 进度显示
-- 断点续传
-
-### 图片管理
-
-- 列表/网格双视图
-- 搜索筛选（关键字、公开状态、排序）
-- 单图编辑（名称、简介、公开状态、标签）
-- 批量编辑/删除
-- 图片详情查看（大图预览）
-- 复制链接/打开原图
-
-### 相册管理
-
-- 创建/编辑/删除相册
-- 相册封面展示
-- 相册标签管理
-
-### 历史记录
-
-- 上传历史查看
-- 状态筛选（成功/失败）
-- 导出 CSV
-
-### 设置
-
-- API 配置
-- 存储策略选择
-- 上传参数配置
-- 主题切换
-
 ## 许可证
 
 MIT License
@@ -239,3 +217,4 @@ MIT License
 
 - [GitHub 仓库](https://github.com/tortb/lskystudio)
 - [兰空图床](https://www.lsky.pro)
+- [rpicx](https://rpicx.com)
