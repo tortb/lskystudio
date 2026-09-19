@@ -14,6 +14,31 @@ export function useUpload() {
   const [hasCheckpoint, setHasCheckpoint] = useState(false);
   const unlistenFns = useRef<UnlistenFn[]>([]);
 
+  // 进度事件按帧合并：上传中每 1% 都会产生一次进度事件，若逐个 setState，
+  // 每次都要复制整个任务数组并重渲染所有任务卡片，批量上传时开销随任务数放大。
+  const pendingProgress = useRef<Map<string, number>>(new Map());
+  const flushFrame = useRef<number | null>(null);
+
+  const scheduleProgressFlush = useCallback(() => {
+    if (flushFrame.current !== null) return;
+    flushFrame.current = requestAnimationFrame(() => {
+      flushFrame.current = null;
+      const updates = pendingProgress.current;
+      if (updates.size === 0) return;
+      pendingProgress.current = new Map();
+      setTasks((prev) => {
+        let changed = false;
+        const next = prev.map((task) => {
+          const progress = updates.get(task.id);
+          if (progress === undefined || progress === task.progress) return task;
+          changed = true;
+          return { ...task, progress, status: "uploading" as const };
+        });
+        return changed ? next : prev;
+      });
+    });
+  }, []);
+
   // 保存的上传参数（用于断点续传和重试）
   const uploadParamsRef = useRef<{
     apiUrl: string;
@@ -38,13 +63,8 @@ export function useUpload() {
     const setupListeners = async () => {
       // 监听进度事件
       const unlistenProgress = await eventApi.onUploadProgress((payload) => {
-        setTasks((prev) =>
-          prev.map((task) =>
-            task.id === payload.taskId
-              ? { ...task, progress: payload.progress, status: "uploading" }
-              : task,
-          ),
-        );
+        pendingProgress.current.set(payload.taskId, payload.progress);
+        scheduleProgressFlush();
       });
 
       // 监听完成事件
@@ -86,8 +106,21 @@ export function useUpload() {
 
     return () => {
       unlistenFns.current.forEach((unlisten) => unlisten());
+      if (flushFrame.current !== null) cancelAnimationFrame(flushFrame.current);
     };
   }, []);
+
+  // 队列跑完后复位上传态，否则「暂停/取消」会一直占着工具栏，无法开始下一批
+  useEffect(() => {
+    if (tasks.length === 0) return;
+    const allFinished = tasks.every(
+      (task) =>
+        task.status === "success" ||
+        task.status === "failed" ||
+        task.status === "cancelled",
+    );
+    if (allFinished) setIsUploading(false);
+  }, [tasks]);
 
   // 开始上传
   const start = useCallback(

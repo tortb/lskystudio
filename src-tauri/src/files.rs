@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
 
@@ -21,13 +23,15 @@ pub async fn select_files(app: AppHandle) -> Vec<FileMeta> {
         _ => return Vec::new(),
     };
 
-    let mut metas = Vec::new();
-    for path in paths {
-        if let Ok(path) = path.into_path() {
-            if let Ok(meta) = file_meta(&path).await {
-                metas.push(meta);
-            }
-        }
-    }
-    metas
+    let paths: Vec<PathBuf> = paths
+        .into_iter()
+        .filter_map(|path| path.into_path().ok())
+        .collect();
+
+    // 并发读取元信息，避免批量选择上千个文件时逐个串行 stat
+    futures::future::join_all(paths.iter().map(|path| file_meta(path)))
+        .await
+        .into_iter()
+        .filter_map(Result::ok)
+        .collect()
 }

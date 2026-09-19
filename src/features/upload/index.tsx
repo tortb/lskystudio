@@ -180,6 +180,11 @@ export default function UploadPage() {
     toast.info("已清除", "成功任务已清除");
   };
 
+  // 稳定的按任务操作回调，保证 ProgressCard 的 memo 只在对应任务变化时重渲染
+  const pauseTask = useCallback((id: string) => pause([id]), [pause]);
+  const resumeTask = useCallback((id: string) => resume([id]), [resume]);
+  const cancelTask = useCallback((id: string) => cancel([id]), [cancel]);
+
   // 计算统计数据
   const totalSize = selectedFiles.reduce((sum, file) => sum + file.size, 0);
   const uploadedSize = tasks
@@ -423,10 +428,10 @@ export default function UploadPage() {
                 progress={task.progress}
                 url={task.url}
                 error={task.error}
-                onPause={() => pause([task.id])}
-                onResume={() => resume([task.id])}
-                onCancel={() => cancel([task.id])}
-                onRetry={() => resume([task.id])}
+                onPause={pauseTask}
+                onResume={resumeTask}
+                onCancel={cancelTask}
+                onRetry={resumeTask}
               />
             ))}
             {tasks.length > 200 && (

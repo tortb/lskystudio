@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
@@ -331,13 +331,12 @@ pub async fn upload_status(
 /// 把拖拽得到的路径解析为文件元信息
 #[tauri::command]
 pub async fn resolve_files(paths: Vec<String>) -> Vec<FileMeta> {
-    let mut metas = Vec::new();
-    for path in paths {
-        if let Ok(meta) = file_meta(Path::new(&path)).await {
-            metas.push(meta);
-        }
-    }
-    metas
+    // 并发读取元信息：批量导入上千个文件时，串行 stat 会明显拖慢选择速度
+    futures::future::join_all(paths.iter().map(|path| file_meta(Path::new(path))))
+        .await
+        .into_iter()
+        .filter_map(Result::ok)
+        .collect()
 }
 
 /// 读取单个文件的元信息（目录会被拒绝）
@@ -478,7 +477,11 @@ async fn run_upload<R: Runtime>(
     }
 }
 
-/// 构造进度回调：更新任务进度并按百分比变化推送事件，避免事件风暴
+/// 进度事件最小推送间隔。大文件按块上传时进度回调极密集，若每次回调都跨 IPC
+/// 推送事件，前端要为此反复重渲染整个任务列表；按时间节流后可显著降低开销。
+const PROGRESS_MIN_INTERVAL_MS: u64 = 120;
+
+/// 构造进度回调：更新任务进度并按「百分比变化 + 时间间隔」推送事件，避免事件风暴
 fn make_progress_fn<R: Runtime>(
     app: &AppHandle<R>,
     runtime: &Arc<UploadRuntime>,
@@ -490,6 +493,8 @@ fn make_progress_fn<R: Runtime>(
     let task_id = task_id.to_string();
     let file_name = file_name.to_string();
     let last_percent = Arc::new(AtomicU64::new(u64::MAX));
+    let last_emit_ms = Arc::new(AtomicU64::new(0));
+    let started = Instant::now();
 
     Arc::new(move |uploaded: u64, total: u64| {
         let percent = if total > 0 {
@@ -497,9 +502,15 @@ fn make_progress_fn<R: Runtime>(
         } else {
             0
         };
-        if last_percent.swap(percent, Ordering::Relaxed) == percent {
+        let changed = last_percent.swap(percent, Ordering::Relaxed) != percent;
+        let elapsed = started.elapsed().as_millis() as u64;
+        let due = elapsed.saturating_sub(last_emit_ms.load(Ordering::Relaxed))
+            >= PROGRESS_MIN_INTERVAL_MS;
+        // 百分比未变化、或距上次推送不足间隔时跳过；完成（100%）始终推送
+        if !changed || (!due && percent < 100) {
             return;
         }
+        last_emit_ms.store(elapsed, Ordering::Relaxed);
         runtime.update(&task_id, |task| task.progress = percent as u32);
         let _ = app.emit(
             "upload_progress",
@@ -559,9 +570,9 @@ pub async fn attempt_upload(
         normalize_base_url(&session.api_url)
     );
 
-    // 边读边上报进度，避免把大文件整体读入内存
+    // 边读边上报进度，避免把大文件整体读入内存；256KB 分块可减少读盘与写 socket 次数
     let uploaded = Arc::new(AtomicU64::new(0));
-    let stream = ReaderStream::with_capacity(file, 64 * 1024).map(move |chunk| {
+    let stream = ReaderStream::with_capacity(file, 256 * 1024).map(move |chunk| {
         if let Ok(bytes) = &chunk {
             let current = uploaded.fetch_add(bytes.len() as u64, Ordering::Relaxed) + bytes.len() as u64;
             on_progress(current, total);
@@ -851,7 +862,7 @@ mod tests {
         let samples = samples.lock().unwrap();
         assert!(
             samples.len() >= 16,
-            "应按 64KB 分块上报进度，实际仅 {} 次",
+            "应按 256KB 分块上报进度，实际仅 {} 次",
             samples.len()
         );
         assert!(

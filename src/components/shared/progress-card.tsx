@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import {
   CheckCircle,
   XCircle,
@@ -26,16 +26,22 @@ interface ProgressCardProps {
   url?: string | null;
   error?: string | null;
   thumbnailUrl?: string | null;
-  onPause?: () => void;
-  onResume?: () => void;
-  onCancel?: () => void;
-  onRetry?: () => void;
-  onRemove?: () => void;
+  onPause?: (id: string) => void;
+  onResume?: (id: string) => void;
+  onCancel?: (id: string) => void;
+  onRetry?: (id: string) => void;
+  onRemove?: (id: string) => void;
   className?: string;
 }
 
-export function ProgressCard({
-  id: _id,
+/**
+ * 上传任务卡片
+ *
+ * 列表内可能同时存在上百个卡片，且进度高频变化，因此用 memo 包裹：
+ * 回调统一定义为接收任务 id，便于调用方传入稳定引用，做到只重渲染进度变化的那一张。
+ */
+export const ProgressCard = memo(function ProgressCard({
+  id,
   fileName,
   fileSize,
   status,
@@ -203,21 +209,21 @@ export function ProgressCard({
       <div className="flex shrink-0 flex-col gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
         {/* 上传中 */}
         {status === "uploading" && onPause && (
-          <Button variant="ghost" size="icon-sm" onClick={onPause} aria-label="暂停">
+          <Button variant="ghost" size="icon-sm" onClick={() => onPause(id)} aria-label="暂停">
             <Pause className="h-4 w-4" />
           </Button>
         )}
 
         {/* 已暂停 */}
         {status === "paused" && onResume && (
-          <Button variant="ghost" size="icon-sm" onClick={onResume} aria-label="继续">
+          <Button variant="ghost" size="icon-sm" onClick={() => onResume(id)} aria-label="继续">
             <RotateCcw className="h-4 w-4" />
           </Button>
         )}
 
         {/* 失败 */}
         {status === "failed" && onRetry && (
-          <Button variant="ghost" size="icon-sm" onClick={onRetry} aria-label="重试">
+          <Button variant="ghost" size="icon-sm" onClick={() => onRetry(id)} aria-label="重试">
             <RotateCcw className="h-4 w-4" />
           </Button>
         )}
@@ -240,17 +246,17 @@ export function ProgressCard({
 
         {/* 取消/删除 */}
         {(status === "pending" || status === "paused" || status === "failed" || status === "cancelled") && onRemove && (
-          <Button variant="ghost" size="icon-sm" onClick={onRemove} aria-label="移除">
+          <Button variant="ghost" size="icon-sm" onClick={() => onRemove(id)} aria-label="移除">
             <X className="h-4 w-4" />
           </Button>
         )}
 
         {status === "uploading" && onCancel && (
-          <Button variant="ghost" size="icon-sm" onClick={onCancel} aria-label="取消">
+          <Button variant="ghost" size="icon-sm" onClick={() => onCancel(id)} aria-label="取消">
             <X className="h-4 w-4" />
           </Button>
         )}
       </div>
     </div>
   );
-}
+});
